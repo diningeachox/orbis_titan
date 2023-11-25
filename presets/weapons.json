@@ -1,0 +1,8 @@
+{
+  "gun":
+      {"type": "gun", "pos": {"x":0, "y":0}, "width": 2, "height": 4, "orientation": 0, "weight": 40},
+  "laser":
+      {"type": "laser", "pos": {"x":0, "y":0}, "width": 2, "height": 3, "orientation": 0, "weight": 80},
+  "missile":
+      {"type": "missile", "pos": {"x":0, "y":0}, "width": 3, "height": 5, "orientation": 0, "weight": 100}
+}
