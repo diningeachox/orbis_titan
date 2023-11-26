@@ -156,6 +156,9 @@ function createModule(name){
     //console.log(chip)
 }
 
+//Temporary connector
+var temp_connector = {mod1: null, edge1: null, mod2: null, edge2: null};
+
 //Temporary Appendage
 var block_width = 80;
 var temp_appendage = {width: 0, height: 0,
@@ -274,7 +277,7 @@ export class BuildScene extends Scene {
               }
           }
          });
-     var new_module_button = new Button({x: Assets.canvas.width / 2 - 100, y:Assets.canvas.height - 100, width:200, height:50, label:"Create module",
+     var new_module_button = new Button({x: Assets.canvas.width / 2 - 150, y:Assets.canvas.height - 100, width:200, height:50, label:"Create module",
           onClick: function(){
               playSound(sfx_sources["button_click"].src, sfx_ctx);
               createModule(Assets.name_field.value);
@@ -282,6 +285,7 @@ export class BuildScene extends Scene {
          });
      this.clickables[1].push(new_module_button);
      this.clickables[1].push(confirm_button);
+     this.clickables[1].push(clear_button);
 
      //Module page tabbed panel
      var module_tabs = new TabbedPanel({
@@ -291,31 +295,40 @@ export class BuildScene extends Scene {
      module_tabs.addToTab("Wires", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: module_tabs.width, options: ["|", "Γ", "ヿ", "⅃", "L", "⼀", "⅃Γ", "Lヿ", "|⼀"]})] );
 
      this.tabbed_panels[1].push(module_tabs);
-     this.clickables[2].push(confirm_button);
 
      /***
      Appendage page
      ***/
      var appendage_tabs = new TabbedPanel({
-        x: Assets.canvas.width - 400, y: 150, tabs:["Modules", "Weapons", "Utilites", "Batteries"]
+        x: Assets.canvas.width - 400, y: 150, tabs:["Modules", "Weapons", "Utilities", "Batteries"]
      });
+     var new_appendage_button = new Button({x: Assets.canvas.width / 2 - 150, y:Assets.canvas.height - 100, width:200, height:50, label:"Create appendage",
+          onClick: function(){
+              playSound(sfx_sources["button_click"].src, sfx_ctx);
+              createModule(Assets.name_field.value);
+          }
+         });
      appendage_tabs.addToTab("Modules", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(module_data)})] );
      appendage_tabs.addToTab("Weapons", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(weapon_data)})] );
-     appendage_tabs.addToTab("Utilites", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: ["Connector"]})] );
+     appendage_tabs.addToTab("Utilities", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: ["Connector", "Energy Sink", "Joint"]})] );
      appendage_tabs.addToTab("Batteries", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["aquam", "photum", "gravitum", "aetherium"]})] );
 
      this.tabbed_panels[2].push(appendage_tabs);
+     this.clickables[2].push(new_appendage_button);
+     this.clickables[2].push(confirm_button);
+     this.clickables[2].push(clear_button);
 
      /***
      Titan page
      ***/
      var titan_tabs = new TabbedPanel({
-        x: Assets.canvas.width - 400, y: 150, tabs:["Appendages", "Body"]
+        x: Assets.canvas.width - 400, y: 150, tabs:["Appendages", "Torso"]
      });
      titan_tabs.addToTab("Appendages", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: titan_tabs.width, options: []})] );
-     titan_tabs.addToTab("Body", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: titan_tabs.width, options: []})] );
+     titan_tabs.addToTab("Torso", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: titan_tabs.width, options: []})] );
 
      this.tabbed_panels[3].push(titan_tabs);
+     this.clickables[3].push(clear_button);
 
    }
    update(delta) {
@@ -487,19 +500,28 @@ export class BuildScene extends Scene {
                c.translate(-this.mid_w - block_width * (w.pos.x - temp_module_w / 2), -this.mid_h + 200 - 25 - block_width * w.pos.y - 40);
            }
 
+           //Sinks (1 x 1)
+           for (const s of temp_appendage.sinks){
+               c.drawImage(images["reactor"], this.mid_w + block_width * (s.pos.x - temp_module_w / 2), this.mid_h - 200 + 25 + block_width * s.pos.y + 40, s.width * block_width, s.height * block_width);
+           }
+
+           for (const j of temp_appendage.joints){
+               c.drawImage(images["joint-hinge"], this.mid_w + block_width * (j.pos.x - temp_module_w / 2), this.mid_h - 200 + 25 + block_width * j.pos.y + 40, j.width * block_width, j.height * block_width);
+           }
+
            //Connectors
            for (const con of temp_appendage.connectors){
                //output edge
                c.fillStyle = "rgba(0, 255, 255, 0.6)";
                c.beginPath();
-               c.roundRect(con.output_edge[0].x * block_width, con.output_edge[0].y * block_width, (con.output_edge[1].x - con.output_edge[0].x + 1) * block_width, (con.output_edge[1].y - con.output_edge[0].y + 1) * block_width, 5);
+               c.roundRect(this.mid_w + block_width * (con.output_edge[0].x - temp_module_w / 2), this.mid_h - 200 + 25 + block_width * con.output_edge[0].y + 40, (con.output_edge[1].x - con.output_edge[0].x + 1) * block_width, (con.output_edge[1].y - con.output_edge[0].y + 1) * block_width, 5);
                //ctx.stroke();
                c.fill();
 
                //input edge
                c.fillStyle = "rgba(255, 0, 255, 0.6)";
                c.beginPath();
-               c.roundRect(con.input_edge[0].x * block_width, con.input_edge[0].y * block_width, (con.input_edge[1].x - con.input_edge[0].x + 1) * block_width, (con.input_edge[1].y - con.input_edge[0].y + 1) * block_width, 5);
+               c.roundRect(this.mid_w + block_width * (con.input_edge[0].x - temp_module_w / 2), this.mid_h - 200 + 25 + block_width * con.input_edge[0].y + 40, (con.input_edge[1].x - con.input_edge[0].x + 1) * block_width, (con.input_edge[1].y - con.input_edge[0].y + 1) * block_width, 5);
                //ctx.stroke();
                c.fill();
 
@@ -535,15 +557,60 @@ export class BuildScene extends Scene {
                    // var ratio = img_height / img_width;
                    var obj = null;
                    if (cur_tab == "Modules"){
-                        obj = ECS.entities.modules[selection_type];
+                       obj = ECS.entities.modules[selection_type];
 
-                        var sprite = images[selection_type];
-                        c.fillStyle = highlight_color;
-                        c.drawImage(sprite, flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, obj.width * block_width, obj.height * block_width);
+                       var sprite = images[selection_type];
+                       c.fillStyle = highlight_color;
+                       c.drawImage(sprite, flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, obj.width * block_width, obj.height * block_width);
 
-                        c.fillRect(flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, obj.width * block_width, obj.height * block_width);
-                   } else if (cur_tab == "Connectors"){
+                       c.fillRect(flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, obj.width * block_width, obj.height * block_width);
+                   } else if (cur_tab == "Utilities"){
+                       if (selection_type != "Connector"){
+                           obj = ECS.entities.utilities[selection_type];
+                           var sprite = images[selection_type];
+                           c.fillStyle = highlight_color;
+                           c.drawImage(sprite, flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, obj.width * block_width, obj.height * block_width);
+                           c.fillRect(flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, obj.width * block_width, obj.height * block_width);
+                       } else {
+                           var sprite = images[selection_type];
+                           c.fillStyle = highlight_color;
+                           c.drawImage(sprite, flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, block_width, block_width);
+                           //c.fillRect(flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, block_width, block_width);
+                           //Draw highlight on the highlighted side
+                           var coords = this.screenXY_inverse(flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2);
+                           var sides = checkSides(temp_appendage, coords.x, coords.y);
+                           if (sides != null){
+                               var output_obj = sides[0];
+                               var output_edge = sides[1];
+                               //Draw edge
+                               if (output_edge == "east"){
+                                   var coords_x = output_obj.pos.x + output_obj.width;
+                                   var coords_y = output_obj.pos.y;
+                                   var draw_coords = this.screenXY(coords_x, coords_y);
+                                   c.fillRect(draw_coords.x, draw_coords.y, block_width, output_obj.height * block_width);
+                               } else if (output_edge == "west"){
+                                   var coords_x = output_obj.pos.x - 1;
+                                   var coords_y = output_obj.pos.y;
+                                   var draw_coords = this.screenXY(coords_x, coords_y);
+                                   c.fillRect(draw_coords.x, draw_coords.y, block_width, output_obj.height * block_width);
 
+                               } else if (output_edge == "north"){
+                                   var coords_x = output_obj.pos.x;
+                                   var coords_y = output_obj.pos.y - 1;
+                                   var draw_coords = this.screenXY(coords_x, coords_y);
+                                   c.fillRect(draw_coords.x, draw_coords.y, output_obj.width * block_width, block_width);
+
+                               } else if (output_edge == "south"){
+                                   var coords_x = output_obj.pos.x;
+                                   var coords_y = output_obj.pos.y + output_obj.height;
+                                   var draw_coords = this.screenXY(coords_x, coords_y);
+                                   c.fillRect(draw_coords.x, draw_coords.y, output_obj.width * block_width, block_width);
+                               }
+                           } else {
+                               c.fillRect(flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, block_width, block_width);
+                           }
+
+                       }
                    } else if (cur_tab == "Weapons"){
                        obj = ECS.entities.weapons[selection_type];
                        var sprite = images[selection_type];
@@ -556,15 +623,6 @@ export class BuildScene extends Scene {
                }
            }
        } else if (screen_vars.page == 3){
-           //Draw appendage hull to dimensions set in textboxes
-           // var rows = temp_module_h;
-           // var cols = temp_module_w;
-           // c.strokeStyle = "green";
-           // for (var i = 0; i < rows; i++){
-           //     for (var j = 0; j < cols; j++){
-           //         c.drawImage(images["appendage_tile"], this.mid_w - 200 + 25 + j * block_width, this.mid_h - 200 + 25 + i * block_width, block_width, block_width);
-           //     }
-           // }
            /**Draw selections**/
 
            var tab_panel = this.tabbed_panels[3][0];
@@ -701,6 +759,63 @@ export class BuildScene extends Scene {
                                 weapon.pos.y = row;
                                 temp_appendage.weapons.push(weapon);
                             }
+                        } else if (cur_tab == "Utilities"){
+                            var row = ~~(i / temp_module_w);
+                            var col = i % temp_module_w;
+                            if (selection_type == "Energy Sink"){
+                                var util = copyObject(ECS.entities.utilities[selection_type]);
+
+
+                                if (row + util.height <= temp_appendage.height && col + util.width <= temp_appendage.width && highlight_color == "rgba(0, 255, 0, 0.5)"){
+                                    util.pos.x = col;
+                                    util.pos.y = row;
+                                    temp_appendage.sinks.push(util);
+                                }
+                            } else if (selection_type == "Joint"){
+                                var util = copyObject(ECS.entities.utilities[selection_type]);
+
+                                //Add module to base plate of appendage
+
+
+                                if (row + util.height <= temp_appendage.height && col + util.width <= temp_appendage.width && highlight_color == "rgba(0, 255, 0, 0.5)"){
+                                    util.pos.x = col;
+                                    util.pos.y = row;
+                                    temp_appendage.joints.push(util);
+                                }
+                            } else if (selection_type == "Connector"){
+                                if (temp_connector.mod1 != null){
+                                    //Insert input module and edge and add it to appendage
+                                    var sides = checkSides(temp_appendage, col, row);
+                                    if (sides != null){
+                                        var output_obj = sides[0];
+                                        var output_edge = sides[1];
+                                        //Make sure the input edge doesn't overlap with output edge
+                                        if (output_obj.pos.x != temp_connector.mod1.pos.x || output_obj.pos.y != temp_connector.mod1.pos.y){
+                                            temp_connector.mod2 = output_obj;
+                                            temp_connector.edge2 = output_edge;
+                                            var new_conn = Connector(temp_connector.mod1, temp_connector.edge1, temp_connector.mod2, temp_connector.edge2);
+                                            temp_appendage.connectors.push(new_conn);
+                                            //Reset temp_connector
+                                            temp_connector.mod1 = null;
+                                            temp_connector.edge1 = null;
+                                            temp_connector.mod2 = null;
+                                            temp_connector.edge2 = null;
+                                        }
+
+                                    }
+                                } else {
+                                    //Insert output module and edge and add it to appendage
+                                    var sides = checkSides(temp_appendage, col, row);
+                                    if (sides != null){
+                                        var output_obj = sides[0];
+                                        var output_edge = sides[1];
+                                        temp_connector.mod1 = output_obj;
+                                        temp_connector.edge1 = output_edge;
+                                        temp_connector.mod2 = null;
+                                        temp_connector.edge2 = null;
+                                    }
+                                }
+                            }
                         }
                         tab_panel.tab_items[cur_tab][0].state = -1;
                         console.log(temp_appendage)
@@ -750,14 +865,28 @@ export class BuildScene extends Scene {
                        obj = ECS.entities.modules[selection_type];
                    } else if (cur_tab == "Weapons"){
                        obj = ECS.entities.weapons[selection_type];
+                   } else if (cur_tab == "Utilities"){
+                       if (selection_type != "Connector"){
+                           obj = ECS.entities.utilities[selection_type];
+                           var overlaps = checkOverlaps(temp_appendage, obj, x, y);
+                           if (!overlaps) {
+                               highlight_color = "rgba(0, 255, 0, 0.5)";
+                           } else {
+                               highlight_color = "rgba(255, 0, 0, 0.5)";
+                           }
+                       } else {
+                           //if (temp_appendage.modules.length > 0) debugger;
+                           var sides = checkSides(temp_appendage, x, y);
+                           if (sides != null){
+                               var output_obj = sides[0];
+                               var output_edge = sides[1];
+                               highlight_color = "rgba(0, 255, 0, 0.5)";
+                           } else {
+                               highlight_color = "rgba(255, 0, 0, 0.5)";
+                           }
+                       }
                    }
-                   //if (temp_appendage.modules.length > 0) debugger;
-                   var overlaps = checkOverlaps(temp_appendage, obj, x, y);
-                   if (!overlaps) {
-                       highlight_color = "rgba(0, 255, 0, 0.5)";
-                   } else {
-                       highlight_color = "rgba(255, 0, 0, 0.5)";
-                   }
+
                }
 
            }
@@ -784,8 +913,52 @@ export class BuildScene extends Scene {
    unload(){
       Assets.name_field.style.visibility = "hidden";
    }
+   screenXY(x, y){
+       return {x: this.mid_w + block_width * (x - temp_module_w / 2), y: this.mid_h - 200 + 25 + block_width * y + 40};
+   }
+   screenXY_inverse(screen_x, screen_y){
+       var x = (screen_x - this.mid_w) / block_width + temp_module_w / 2;
+       var y = (screen_y - this.mid_h + 200 - 25 - 40) / block_width;
+       return {x: ~~x, y: ~~y};
+   }
 }
 
+
+
+function getSide(obj, x, y){
+    if (x == obj.pos.x && y >= obj.pos.y + 1 && y < obj.pos.y + obj.height){ //West side
+        return [obj, "west"];
+    } else if (x == obj.pos.x + obj.width - 1 && y >= obj.pos.y && y < obj.pos.y + obj.height - 1){ //East side
+        return [obj, "east"];
+    } else if (y == obj.pos.y && x >= obj.pos.x && x < obj.pos.x + obj.width - 1){ //North side
+        return [obj, "north"];
+    } else if (y == obj.pos.y + obj.width - 1 && x >= obj.pos.x + 1 && x < obj.pos.x + obj.width){ //South side
+        return [obj, "south"];
+    }
+    return null;
+}
+
+//Check sides for possible slots for connectors:
+//Need to check - modules, weapons, sinks
+//Return the recommended side
+function checkSides(ap, x, y){
+    var side = null;
+    for (const mod of ap.modules){
+        side = getSide(mod, x, y);
+        if (side != null) return side;
+    }
+
+    for (const w of ap.weapons){
+        side = getSide(w, x, y);
+        if (side != null) return side;
+    }
+
+    for (const s of ap.sinks){
+        side = getSide(s, x, y);
+        if (side != null) return side;
+    }
+    return null;
+}
 
 function checkOverlaps(ap, obj, x, y){
     //var overlap = false;

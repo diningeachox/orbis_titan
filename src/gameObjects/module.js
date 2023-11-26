@@ -93,7 +93,7 @@ const Sink = (x, y) => {
     for (const key of Object.keys(resource_colours)){
         storage[key] = 0;
     }
-    return {storage: storage, pos: {x:x, y:y}, width: 2, height: 2};
+    return {storage: storage, pos: {x:x, y:y}, width: 3, height: 3};
 }
 
 const ModuleFactory = (w, h, data = [], name = "") => {

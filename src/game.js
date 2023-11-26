@@ -232,7 +232,10 @@ class Game {
         ECS.entities.weapons["gun"] = weapon_data["gun"];
         ECS.entities.weapons["laser"] = weapon_data["laser"];
         ECS.entities.weapons["missile"] = weapon_data["missile"];
-        
+
+        ECS.entities.utilities["Energy Sink"] = Sink(0, 0);
+        ECS.entities.utilities["Joint"] = Joint(0, 0);
+
         this.batteries = [
                           Battery({type: "aquam", pos: {x: 3, y: 6}, rate: 30, quantity: 6}),
                           Battery({type: "aquam", pos: {x: 4, y: 6}, rate: 30, quantity: 6}),
