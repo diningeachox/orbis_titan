@@ -32,51 +32,8 @@ const Connector = (mod1, edge1, mod2, edge2) => {
     //Format: starting point, ending point
     var output_edge = [{x:0, y:0}, {x:0, y:0}];
     var input_edge = [{x:0, y:0}, {x:0, y:0}];
-
-    if (edge1 == "north"){
-        output_edge[0].x = mod1.pos.x;
-        output_edge[0].y = mod1.pos.y - 1;
-        output_edge[1].x = mod1.pos.x + mod1.width - 1;
-        output_edge[1].y = mod1.pos.y - 1;
-    } else if (edge1 == "south"){
-        output_edge[0].x = mod1.pos.x;
-        output_edge[0].y = mod1.pos.y + mod1.height;
-        output_edge[1].x = mod1.pos.x + mod1.width - 1;
-        output_edge[1].y = mod1.pos.y + mod1.height;
-    } else if (edge1 == "west"){
-        output_edge[0].x = mod1.pos.x - 1;
-        output_edge[0].y = mod1.pos.y;
-        output_edge[1].x = mod1.pos.x - 1;
-        output_edge[1].y = mod1.pos.y + mod1.height - 1;
-    } else if (edge1 == "east"){
-        output_edge[0].x = mod1.pos.x + mod1.width;
-        output_edge[0].y = mod1.pos.y;
-        output_edge[1].x = mod1.pos.x + mod1.width;
-        output_edge[1].y = mod1.pos.y + mod1.height - 1;
-    }
-
-    if (edge2 == "north"){
-        input_edge[0].x = mod2.pos.x;
-        input_edge[0].y = mod2.pos.y - 1;
-        input_edge[1].x = mod2.pos.x + mod2.width - 1;
-        input_edge[1].y = mod2.pos.y - 1;
-    } else if (edge2 == "south"){
-        input_edge[0].x = mod2.pos.x;
-        input_edge[0].y = mod2.pos.y + mod2.height;
-        input_edge[1].x = mod2.pos.x + mod2.width - 1;
-        input_edge[1].y = mod2.pos.y + mod2.height;
-    } else if (edge2 == "west"){
-        input_edge[0].x = mod2.pos.x - 1;
-        input_edge[0].y = mod2.pos.y;
-        input_edge[1].x = mod2.pos.x - 1;
-        input_edge[1].y = mod2.pos.y + mod2.height - 1;
-    } else if (edge2 == "east"){
-        input_edge[0].x = mod2.pos.x + mod2.width;
-        input_edge[0].y = mod2.pos.y;
-        input_edge[1].x = mod2.pos.x + mod2.width;
-        input_edge[1].y = mod2.pos.y + mod2.height - 1;
-    }
-
+    calcEdge(mod1, output_edge, edge1);
+    calcEdge(mod2, input_edge, edge2);
     return {output_edge: output_edge, input_edge: input_edge, source: {obj: mod1, edge: edge1}, target: {obj: mod2, edge: edge2}};
 }
 
@@ -173,4 +130,28 @@ function loadModule(dict){
 
 }
 
-export {Module, ModuleFactory, Weapon, Connector, Joint, Sink};
+function calcEdge(m, edge_pos, edge){
+    if (edge == "north"){
+        edge_pos[0].x = m.pos.x;
+        edge_pos[0].y = m.pos.y - 1;
+        edge_pos[1].x = m.pos.x + m.width - 1;
+        edge_pos[1].y = m.pos.y - 1;
+    } else if (edge == "south"){
+        edge_pos[0].x = m.pos.x;
+        edge_pos[0].y = m.pos.y + m.height;
+        edge_pos[1].x = m.pos.x + m.width - 1;
+        edge_pos[1].y = m.pos.y + m.height;
+    } else if (edge == "west"){
+        edge_pos[0].x = m.pos.x - 1;
+        edge_pos[0].y = m.pos.y;
+        edge_pos[1].x = m.pos.x - 1;
+        edge_pos[1].y = m.pos.y + m.height - 1;
+    } else if (edge == "east"){
+        edge_pos[0].x = m.pos.x + m.width;
+        edge_pos[0].y = m.pos.y;
+        edge_pos[1].x = m.pos.x + m.width;
+        edge_pos[1].y = m.pos.y + m.height - 1;
+    }
+}
+
+export {Module, ModuleFactory, Weapon, Connector, Joint, Sink, calcEdge};

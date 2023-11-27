@@ -204,7 +204,14 @@ export class IconMenu extends StateMenu {
                 ctx.fillText(this.options[i], this.x + this.option_height, this.y + (i + 0.5) * this.option_height);
             }
             //Draw icon associated to option string
-            ctx.drawImage(images[this.options[i]], this.x, this.y + i * this.option_height, this.option_height, this.option_height);
+            var img = images[this.options[i]];
+            if (img.width >= img.height){
+                var ratio = (1 - img.height / img.width) / 2;
+                ctx.drawImage(img, this.x, this.y + (i + ratio) * this.option_height, this.option_height, this.option_height * img.height / img.width);
+            } else {
+                var ratio = (1 - img.width / img.height) / 2;
+                ctx.drawImage(img, this.x + ratio * this.option_height, this.y + i * this.option_height, this.option_height * img.width / img.height, this.option_height);
+            }
         }
     }
 }

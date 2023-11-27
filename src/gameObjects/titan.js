@@ -457,7 +457,7 @@ export class Titan {
         ctx.rotate(root.angle);
 
         draw_appendage(root, game, ctx);
-        
+
         if (top_level==1) ctx.translate(root.width / 2 * game.grid_width, root.height / 2 * game.grid_height);
         for (const key of root.children){
             var ap = ECS.entities.appendages[key];
@@ -482,7 +482,7 @@ function draw_appendage(ap, game, ctx){
         }
     }
     //Batteries (under everything)
-    for (const b of game.batteries){
+    for (const b of ap.batteries){
         var color = resource_colours[b.type];
 
         ctx.fillStyle = color;

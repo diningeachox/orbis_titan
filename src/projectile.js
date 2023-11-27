@@ -5,7 +5,7 @@ class Projectile {
         this.pos = new Vector2D(x, y);
         this.target = null;
         this.homing = false;
-        
+         
     }
 }
 

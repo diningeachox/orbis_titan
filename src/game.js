@@ -4,7 +4,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.135.0/build/three.m
 
 import {Module, Connector, Weapon, Joint, Sink, createModuleImage} from "./gameObjects/module.js";
 import {Cell, Router, Grid} from "./gameObjects/cell.js";
-import {Shell, Appendage, Torso} from "./gameObjects/appendage.js";
+import {Shell, Appendage, Torso, createAppendageImage} from "./gameObjects/appendage.js";
 import {Titan} from "./gameObjects/titan.js";
 import {Battery} from "./gameObjects/battery.js";
 
@@ -236,6 +236,16 @@ class Game {
         ECS.entities.utilities["Energy Sink"] = Sink(0, 0);
         ECS.entities.utilities["Joint"] = Joint(0, 0);
 
+        ECS.blueprints.modules["testm"] = testm;
+        ECS.blueprints.modules["testm2"] = testm2;
+
+        ECS.blueprints.weapons["gun"] = weapon_data["gun"];
+        ECS.blueprints.weapons["laser"] = weapon_data["laser"];
+        ECS.blueprints.weapons["missile"] = weapon_data["missile"];
+
+        ECS.blueprints.utilities["Energy Sink"] = Sink(0, 0);
+        ECS.blueprints.utilities["Joint"] = Joint(0, 0);
+
         this.batteries = [
                           Battery({type: "aquam", pos: {x: 3, y: 6}, rate: 30, quantity: 6}),
                           Battery({type: "aquam", pos: {x: 4, y: 6}, rate: 30, quantity: 6}),
@@ -266,6 +276,9 @@ class Game {
             console.log(test_appendage.children)
             ECS.entities.appendages[test_appendage.id] = test_appendage;
             ECS.entities.appendages[test_appendage_2.id] = test_appendage_2;
+            ECS.blueprints.appendages[test_appendage.id] = test_appendage;
+            //Create appendage images for building
+            createAppendageImage(test_appendage, 80);
             children.push(test_appendage.id);
 
         }
@@ -282,12 +295,20 @@ class Game {
 
 
         ECS.entities.appendages[test_torso.id] = test_torso;
+        ECS.blueprints.torsos[test_torso.id] = test_torso;
+        createAppendageImage(test_torso, 80);
         console.log(test_torso)
+
+        console.log(JSON.stringify(test_appendage));
+
+        //var appendage_copy = JSON.parse(JSON.stringify(test_appendage));
 
         this.chips = {};
         this.mods = {};
         this.appendages = {"test": test_appendage};
         this.titans = {};
+
+
 
         var test_titan_config = {"pos": new Vector2D(50, 60), "appendages": [test_appendage, test_appendage_2], "torso": test_torso};
         var test_titan = new Titan(test_titan_config);
