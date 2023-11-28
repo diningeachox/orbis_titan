@@ -2,7 +2,7 @@ import * as Scene from './scenes.js';
 import * as Assets from './assets.js';
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.135.0/build/three.module.js';
 
-import {Module, Connector, Weapon, Joint, Sink, createModuleImage} from "./gameObjects/module.js";
+import {Module, Connector, Weapon, Joint, Sink, Mainframe, createModuleImage} from "./gameObjects/module.js";
 import {Cell, Router, Grid} from "./gameObjects/cell.js";
 import {Shell, Appendage, Torso, createAppendageImage} from "./gameObjects/appendage.js";
 import {Titan} from "./gameObjects/titan.js";
@@ -229,9 +229,9 @@ class Game {
         ECS.entities.modules["testm"] = testm;
         ECS.entities.modules["testm2"] = testm2;
 
-        ECS.entities.weapons["gun"] = weapon_data["gun"];
-        ECS.entities.weapons["laser"] = weapon_data["laser"];
-        ECS.entities.weapons["missile"] = weapon_data["missile"];
+        ECS.entities.weapons["gun"] = Weapon(weapon_data["gun"]);
+        ECS.entities.weapons["laser"] = Weapon(weapon_data["laser"]);
+        ECS.entities.weapons["missile"] = Weapon(weapon_data["missile"]);
 
         ECS.entities.utilities["Energy Sink"] = Sink(0, 0);
         ECS.entities.utilities["Joint"] = Joint(0, 0);
@@ -239,12 +239,13 @@ class Game {
         ECS.blueprints.modules["testm"] = testm;
         ECS.blueprints.modules["testm2"] = testm2;
 
-        ECS.blueprints.weapons["gun"] = weapon_data["gun"];
-        ECS.blueprints.weapons["laser"] = weapon_data["laser"];
-        ECS.blueprints.weapons["missile"] = weapon_data["missile"];
+        ECS.blueprints.weapons["gun"] = Weapon(weapon_data["gun"]);
+        ECS.blueprints.weapons["laser"] = Weapon(weapon_data["laser"]);
+        ECS.blueprints.weapons["missile"] = Weapon(weapon_data["missile"]);
 
         ECS.blueprints.utilities["Energy Sink"] = Sink(0, 0);
         ECS.blueprints.utilities["Joint"] = Joint(0, 0);
+        ECS.blueprints.utilities["Mainframe"] = Mainframe(0, 0);
 
         this.batteries = [
                           Battery({type: "aquam", pos: {x: 3, y: 6}, rate: 30, quantity: 6}),
@@ -295,6 +296,7 @@ class Game {
 
 
         ECS.entities.appendages[test_torso.id] = test_torso;
+        ECS.blueprints.appendages[test_torso.id] = test_torso;
         ECS.blueprints.torsos[test_torso.id] = test_torso;
         createAppendageImage(test_torso, 80);
         console.log(test_torso)

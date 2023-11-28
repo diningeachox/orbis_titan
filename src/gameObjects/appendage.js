@@ -33,7 +33,9 @@ const Appendage = (config) => {
       children: config.children || [],
       pos: config.pos,
       angle: config.angle || 0,
-      weight: 0
+      weight: 0,
+      quanta: [],
+      torso: false
     };
 }
 
@@ -42,7 +44,9 @@ export function calcWeight(ap){
 }
 
 const Torso = (config) => {
-    return Appendage(config);
+    var obj = Appendage(config);
+    obj.torso = true;
+    return obj;
 }
 
 function createAppendageImage(ap, block_width){

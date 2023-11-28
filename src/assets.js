@@ -47,7 +47,7 @@ buttonFont.load().then(function(font){
   console.log('Title Font loaded');
 });
 
-var titleFont = new FontFace('titleFont', 'url(../fonts/WarEliteGrungeDemo-lg2J5.ttf)');
+var titleFont = new FontFace('titleFont', 'url(../fonts/NamcoRegular-lgzd.ttf)');
 titleFont.load().then(function(font){
   // with canvas, if this is ommited won't work
   document.fonts.add(font);

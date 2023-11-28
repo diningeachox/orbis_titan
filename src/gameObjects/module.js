@@ -38,7 +38,11 @@ const Connector = (mod1, edge1, mod2, edge2) => {
 }
 
 const Weapon = (config) => {
-    return {type: config.type, pos: config.pos, width: 2, height: config.height, orientation: config.orientation, weight: config.weight};
+    var storage = {};
+    for (const key of Object.keys(resource_colours)){
+        if (key.includes("projectile")) storage[key] = 0;
+    }
+    return {ammo: storage, type: config.type, pos: config.pos, width: config.width, height: config.height, orientation: config.orientation, weight: config.weight};
 }
 
 const Joint = (x, y) => {
@@ -50,7 +54,15 @@ const Sink = (x, y) => {
     for (const key of Object.keys(resource_colours)){
         storage[key] = 0;
     }
-    return {storage: storage, pos: {x:x, y:y}, width: 3, height: 3};
+    return {storage: storage, pos: {x:x, y:y}, width: 3, height: 3, control: false};
+}
+
+const Mainframe = (x, y) => {
+    var storage = {};
+    for (const key of Object.keys(resource_colours)){
+        storage[key] = 0;
+    }
+    return {storage: storage, pos: {x:x, y:y}, width: 6, height: 6, control: true};
 }
 
 const ModuleFactory = (w, h, data = [], name = "") => {
@@ -154,4 +166,4 @@ function calcEdge(m, edge_pos, edge){
     }
 }
 
-export {Module, ModuleFactory, Weapon, Connector, Joint, Sink, calcEdge};
+export {Module, ModuleFactory, Weapon, Connector, Joint, Sink, Mainframe, calcEdge};

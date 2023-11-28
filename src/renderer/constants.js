@@ -33,6 +33,7 @@ export const normals = [
 
 export const texCoords = new Array(6).fill([0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0]).flat();
 
+//2d rect 
 export const plane_vert = [0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0];
 export const plane_ind = [0,  1,  2,      0,  2,  3 ];
 export const plane_col = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];

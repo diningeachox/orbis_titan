@@ -124,10 +124,10 @@ export class Menu extends Scene {
 
         //c.drawImage(img, 0, 0, canvas.height, canvas.height);
         //title
-        c.font="90px titleFont";
+        c.font="70px titleFont";
         c.fillStyle = "white";
         c.textAlign = "center";
-        c.fillText("Orbis Titan", canvas.width/2, 100);
+        c.fillText("orbis titan", canvas.width/2, 100);
 
         for (var i = 0; i < this.buttons.length; i++){
             this.buttons[i].draw(c);
@@ -263,10 +263,10 @@ export class Ins extends Scene {
 
         //c.drawImage(img, 0, 0, canvas.height, canvas.height);
         //title
-        c.font="90px titleFont";
+        c.font="70px titleFont";
         c.fillStyle = "white";
         c.textAlign = "center";
-        c.fillText("Credits", canvas.width/2, 100);
+        c.fillText("credits", canvas.width/2, 100);
 
         for (var i = 0; i < this.buttons.length; i++){
             this.buttons[i].draw(c);

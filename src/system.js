@@ -15,7 +15,7 @@ ECS.systems.userInput = function systemUserInput (entities, delta) {
 
 }
 
-function updateAppendage(game, ap, delta){
+export function updateAppendage(game, ap, delta){
     for (const b of ap.batteries){
         if (game.frame % b.rate == 0){
             //Spawn a new quantum in each orthogonal direction
@@ -106,6 +106,33 @@ function updateAppendage(game, ap, delta){
             //} else if (q.pos.y < 0 || q.pos.y > game.appendages["test"].height || q.pos.x < 0 || q.pos.x > game.appendages["test"].width){
             }
         }
+
+        //Check sinks
+        for (const s of ap.sinks){
+            if (q.pos.x >= s.pos.x && q.pos.x <= s.pos.x + s.width && q.pos.y >= s.pos.y && q.pos.y <= s.pos.y + s.height){
+                //Check for entering center of sink
+                var rel_x = q.pos.x - s.pos.x;
+                var rel_y = q.pos.y - s.pos.y;
+                if (approx(rel_x - ~~(rel_x), 0.5) && approx(rel_y - ~~(rel_y), 0.5)){
+                    s.storage[q.type] += q.amount;
+                }
+                in_module = true;
+            }
+        }
+
+        //Check weapons
+        for (const w of ap.weapons){
+            if (q.pos.x >= w.pos.x && q.pos.x <= w.pos.x + w.width && q.pos.y >= w.pos.y && q.pos.y <= w.pos.y + w.height){
+                //Check for entering center of sink
+                var rel_x = q.pos.x - w.pos.x;
+                var rel_y = q.pos.y - w.pos.y;
+                if (approx(rel_x - ~~(rel_x), 0.5) && approx(rel_y - ~~(rel_y), 0.5)){
+                    if (w.ammo.hasOwnProperty(q.type)) w.ammo[q.type] += q.amount;
+                }
+                in_module = true;
+            }
+        }
+
         if (deleted) continue;
         if (in_module == false && l1_dist(q.pos, q.origin) > 1){
             //Check if inside connector
@@ -114,65 +141,85 @@ function updateAppendage(game, ap, delta){
                     //In output edge, teleport to input edge and distribute to the nearest matching cell input
                     if (c.target.edge == "north"){
                         //Search target module's north side
-                        for (var i = 0; i < c.target.obj.width; i++){
-                            var grid = c.target.obj.interface[i];
-                            if (grid.obj != null){
-                                var chip = grid.obj;
-                                var pos = new Vector2D(c.target.obj.pos.x + i + 0.5, c.target.obj.pos.y);
-                                if (chip.capacity.hasOwnProperty(q.type)){
-                                    //Quantum goes south into chip from north side
-                                    game.quanta.push(Quantum(pos.x, pos.y, 0, 0.01, q.type, q.amount));
-                                    // q.pos = pos;
-                                    // q.vel.x = 0;
-                                    // q.vel.y = 0.01;
-                                    break;
+                        if (c.target.obj.hasOwnProperty("interface")){
+                            for (var i = 0; i < c.target.obj.width; i++){
+                                var grid = c.target.obj.interface[i];
+                                if (grid.obj != null){
+                                    var chip = grid.obj;
+                                    var pos = new Vector2D(c.target.obj.pos.x + i + 0.5, c.target.obj.pos.y);
+                                    if (chip.capacity.hasOwnProperty(q.type)){
+                                        //Quantum goes south into chip from north side
+                                        game.quanta.push(Quantum(pos.x, pos.y, 0, 0.01, q.type, q.amount));
+                                        // q.pos = pos;
+                                        // q.vel.x = 0;
+                                        // q.vel.y = 0.01;
+                                        break;
+                                    }
                                 }
                             }
+                        } else {
+                            var pos = new Vector2D(c.target.obj.pos.x + 0.5, c.target.obj.pos.y);
+                            game.quanta.push(Quantum(pos.x, pos.y, 0, 0.01, q.type, q.amount));
                         }
                     } else if (c.target.edge == "south"){
                         //Search target module's south side
-                        for (var i = 0; i < c.target.obj.width; i++){
-                            var grid = c.target.obj.interface[(c.target.obj.height - 1) * c.target.obj.width + i];
-                            if (grid.obj != null){
-                                var chip = grid.obj;
-                                var pos = new Vector2D(c.target.obj.pos.x + i + 0.5, c.target.obj.pos.y + c.target.obj.height);
-                                if (chip.capacity.hasOwnProperty(q.type)){
-                                    game.quanta.push(Quantum(pos.x, pos.y, 0, -0.01, q.type, q.amount));
-                                    //Quantum goes north into chip from south side
-                                    // q.pos = pos;
-                                    // q.vel.x = 0;
-                                    // q.vel.y = -0.01;
-                                    break;
+                        if (c.target.obj.hasOwnProperty("interface")){
+                            for (var i = 0; i < c.target.obj.width; i++){
+                                var grid = c.target.obj.interface[(c.target.obj.height - 1) * c.target.obj.width + i];
+                                if (grid.obj != null){
+                                    var chip = grid.obj;
+                                    var pos = new Vector2D(c.target.obj.pos.x + i + 0.5, c.target.obj.pos.y + c.target.obj.height);
+                                    if (chip.capacity.hasOwnProperty(q.type)){
+                                        game.quanta.push(Quantum(pos.x, pos.y, 0, -0.01, q.type, q.amount));
+                                        //Quantum goes north into chip from south side
+                                        // q.pos = pos;
+                                        // q.vel.x = 0;
+                                        // q.vel.y = -0.01;
+                                        break;
+                                    }
                                 }
                             }
+                        } else {
+                            var pos = new Vector2D(c.target.obj.pos.x + 0.5, c.target.obj.pos.y + c.target.obj.height);
+                            game.quanta.push(Quantum(pos.x, pos.y, 0, -0.01, q.type, q.amount));
                         }
                     } else if (c.target.edge == "east"){
-                        //Search target module's east side
-                        for (var i = 0; i < c.target.obj.height; i++){
-                            var grid = c.target.obj.interface[i * c.target.obj.width + (c.target.obj.width - 1)];
-                            if (grid.obj != null){
-                                var chip = grid.obj;
-                                var pos = new Vector2D(c.target.obj.pos.x + c.target.obj.width, c.target.obj.pos.y + i + 0.5);
-                                if (chip.capacity.hasOwnProperty(q.type)){
-                                    //Quantum goes west into chip from east side
-                                    game.quanta.push(Quantum(pos.x, pos.y, -0.01, 0, q.type, q.amount));
-                                    break;
+                        if (c.target.obj.hasOwnProperty("interface")){
+                            //Search target module's east side
+                            for (var i = 0; i < c.target.obj.height; i++){
+                                var grid = c.target.obj.interface[i * c.target.obj.width + (c.target.obj.width - 1)];
+                                if (grid.obj != null){
+                                    var chip = grid.obj;
+                                    var pos = new Vector2D(c.target.obj.pos.x + c.target.obj.width, c.target.obj.pos.y + i + 0.5);
+                                    if (chip.capacity.hasOwnProperty(q.type)){
+                                        //Quantum goes west into chip from east side
+                                        game.quanta.push(Quantum(pos.x, pos.y, -0.01, 0, q.type, q.amount));
+                                        break;
+                                    }
                                 }
                             }
+                        } else {
+                            var pos = new Vector2D(c.target.obj.pos.x + c.target.obj.width, c.target.obj.pos.y + 0.5);
+                            game.quanta.push(Quantum(pos.x, pos.y, -0.01, 0, q.type, q.amount));
                         }
                     } else if (c.target.edge == "west"){
-                        //Search target module's west side
-                        for (var i = 0; i < c.target.obj.height; i++){
-                            var grid = c.target.obj.interface[i * c.target.obj.width];
-                            if (grid.obj != null){
-                                var chip = grid.obj;
-                                var pos = new Vector2D(c.target.obj.pos.x, c.target.obj.pos.y + i + 0.5);
-                                if (chip.capacity.hasOwnProperty(q.type)){
-                                    //Quantum goes north into chip from south side
-                                    game.quanta.push(Quantum(pos.x, pos.y, 0.01, 0, q.type, q.amount));
-                                    break;
+                        if (c.target.obj.hasOwnProperty("interface")){
+                            //Search target module's west side
+                            for (var i = 0; i < c.target.obj.height; i++){
+                                var grid = c.target.obj.interface[i * c.target.obj.width];
+                                if (grid.obj != null){
+                                    var chip = grid.obj;
+                                    var pos = new Vector2D(c.target.obj.pos.x, c.target.obj.pos.y + i + 0.5);
+                                    if (chip.capacity.hasOwnProperty(q.type)){
+                                        //Quantum goes north into chip from south side
+                                        game.quanta.push(Quantum(pos.x, pos.y, 0.01, 0, q.type, q.amount));
+                                        break;
+                                    }
                                 }
                             }
+                        } else {
+                            var pos = new Vector2D(c.target.obj.pos.x, c.target.obj.pos.y + 0.5);
+                            game.quanta.push(Quantum(pos.x, pos.y, 0.01, 0, q.type, q.amount));
                         }
                     }
                 }

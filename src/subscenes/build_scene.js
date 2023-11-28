@@ -8,7 +8,10 @@ import {isNum, copyObject} from "../utils.js";
 import {rectvrect} from "../collision.js";
 import {Chip, ChipFactory} from "../gameObjects/cell.js";
 import {Module, ModuleFactory, Connector, calcEdge} from "../gameObjects/module.js";
+import {Battery} from "../gameObjects/battery.js";
+import {blurCircle} from "../gameObjects/titan.js";
 import {Vector2D} from "../vector2D.js";
+import {updateAppendage} from "../system.js";
 
 import module_data from '../../presets/modules.json' assert { type: 'json' };
 import weapon_data from '../../presets/weapons.json' assert { type: 'json' };
@@ -20,6 +23,9 @@ var c = Assets.c;
 var ol = Assets.ol;
 
 var highlight_color = "rgba(0, 255, 0, 0.5)";
+
+// Mock game object to simulate the action on appendages
+var mock_game = {quanta: [], frame: 0};
 
 //Objects within the scene
 var cell_button = new Button({x: 110, y:100, width:200, height:50, label:"Chips",
@@ -103,9 +109,10 @@ var temp_module = [];
 
 function createChip(name){
     var chip = ChipFactory(temp_cell, name);
-    game.chips[chip.name] = chip;
+    //game.chips[chip.name] = chip;
+    ECS.blueprints.chips[name] = chip;
     var tab_panel = build_scene.tabbed_panels[1][0];
-    tab_panel.tab_items["Chips"][0].options = Object.keys(game.chips);
+    tab_panel.tab_items["Chips"][0].options = Object.keys(ECS.blueprints.chips);
 
     //Create sprite
     var mid_w = Assets.canvas.width / 2;
@@ -131,18 +138,19 @@ function createChip(name){
 
 function createModule(name){
     var mod = ModuleFactory(temp_module_w, temp_module_h, temp_module, name);
-    game.mods[mod.name] = mod;
+    //game.mods[mod.name] = mod;
+    ECS.blueprints.modules[name] = mod;
     var tab_panel = build_scene.tabbed_panels[2][0];
-    tab_panel.tab_items["Modules"][0].options = Object.keys(game.mods);
+    tab_panel.tab_items["Modules"][0].options = Object.keys(ECS.blueprints.modules);
 
     var mid_w = Assets.canvas.width / 2;
     var mid_h = Assets.canvas.height / 2;
     var newCanvas = document.createElement('canvas');
-    newCanvas.width = temp_module_w * 80;
-    newCanvas.height = temp_module_h * 80;
+    newCanvas.width = temp_module_w * block_width;
+    newCanvas.height = temp_module_h * block_width;
     var newContext = newCanvas.getContext('2d');
 
-    newContext.drawImage(Assets.canvas, mid_w - 200 + 25, mid_h - 200 + 25, newCanvas.width, newCanvas.height, 0, 0, newCanvas.width, newCanvas.height);
+    newContext.drawImage(Assets.canvas, mid_w - block_width * temp_module_w / 2, mid_h - 200 + 25 + 40, newCanvas.width, newCanvas.height, 0, 0, newCanvas.width, newCanvas.height);
 
     //Black veil over the whole module
     newContext.fillStyle = 'rgba(0, 0, 0, 0.3)';
@@ -172,7 +180,48 @@ var temp_appendage = {width: 0, height: 0,
   id: null,
   children: [],
   pos: new Vector2D(0, 0),
-  angle: 0};
+  angle: 0,
+  quanta: [],
+  torso: false
+};
+
+var simulating = false;
+
+function createAppendage(name){
+    ECS.blueprints.appendages[name] = temp_appendage;
+    var tab_panel = build_scene.tabbed_panels[3][0];
+    var appendage_keys = [];
+    var torso_keys = [];
+    for (const key of Object.keys(ECS.blueprints.appendages)){
+        if (ECS.blueprints.appendages[key].torso == true){
+            torso_keys.push(key);
+        } else {
+            appendage_keys.push(key);
+        }
+    }
+    tab_panel.tab_items["Torsos"][0].options = torso_keys;
+    tab_panel.tab_items["Appendages"][0].options = appendage_keys;
+
+    var mid_w = Assets.canvas.width / 2;
+    var mid_h = Assets.canvas.height / 2;
+    var newCanvas = document.createElement('canvas');
+    newCanvas.width = temp_module_w * block_width;
+    newCanvas.height = temp_module_h * block_width;
+    var newContext = newCanvas.getContext('2d');
+
+    newContext.drawImage(Assets.canvas, mid_w - block_width * temp_module_w / 2, mid_h - 200 + 25 + 40, newCanvas.width, newCanvas.height, 0, 0, newCanvas.width, newCanvas.height);
+
+    //Black veil over the whole module
+    newContext.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    newContext.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
+    //Add sprite to image array
+    var image_data = newCanvas.toDataURL();
+    images[name] = document.createElement('img');
+    images[name].src = image_data;
+    console.log("Created new module!")
+    //console.log(chip)
+}
 
 
 function update_regions(w, h, page){
@@ -186,6 +235,7 @@ function update_regions(w, h, page){
     }
 
     block_width = Math.min(80, Math.min(canvas.width / (2 * temp_module_w), canvas.width / (2 * temp_module_h)));
+    block_width = Math.min(block_width, canvas.height / (2 * temp_module_h));
     for (var i = 0; i < h; i++){
         for (var j = 0; j < w; j++){
             build_scene.regions[page].push(Region(build_scene.mid_w + block_width * (j - temp_module_w / 2 + 0.5), build_scene.mid_h - 200 + 25 + block_width * (i + 0.5) + 40, block_width, block_width));
@@ -306,9 +356,18 @@ export class BuildScene extends Scene {
      var new_appendage_button = new Button({x: Assets.canvas.width / 2 - 150, y:Assets.canvas.height - 100, width:200, height:50, label:"Create appendage",
           onClick: function(){
               playSound(sfx_sources["button_click"].src, sfx_ctx);
+
+              createAppendage(Assets.name_field.value);
+          }
+         });
+     var simulate_button = new Button({x: Assets.canvas.width / 2 + 400, y:Assets.canvas.height - 100, width:200, height:50, label:"Simulate", color: "#00A900",
+          onClick: function(){
+              playSound(sfx_sources["button_click"].src, sfx_ctx);
+              simulating = !(simulating);
               //createModule(Assets.name_field.value);
           }
          });
+     this.simulat_button = simulate_button;
      appendage_tabs.addToTab("Modules", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(module_data)})] );
      appendage_tabs.addToTab("Weapons", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(weapon_data)})] );
      appendage_tabs.addToTab("Utilities", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: ["Connector", "Energy Sink", "Joint", "Mainframe"]})] );
@@ -318,12 +377,13 @@ export class BuildScene extends Scene {
      this.clickables[2].push(new_appendage_button);
      this.clickables[2].push(confirm_button);
      this.clickables[2].push(clear_button);
+     this.clickables[2].push(simulate_button);
 
      /***
      Titan page
      ***/
      var titan_tabs = new TabbedPanel({
-        x: Assets.canvas.width - 600, y: 150, tabs:["Appendages", "Torso"]
+        x: Assets.canvas.width - 600, y: 150, tabs:["Appendages", "Torsos"]
      });
      var new_titan_button = new Button({x: Assets.canvas.width / 2 - 150, y:Assets.canvas.height - 100, width:200, height:50, label:"Create titan",
           onClick: function(){
@@ -332,7 +392,7 @@ export class BuildScene extends Scene {
           }
          });
      titan_tabs.addToTab("Appendages", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.appendages) })] );
-     titan_tabs.addToTab("Torso", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.torsos)})] );
+     titan_tabs.addToTab("Torsos", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.torsos)})] );
      // titan_tabs.addToTab("Modules", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(module_data)})] );
      // titan_tabs.addToTab("Weapons", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(weapon_data)})] );
      // titan_tabs.addToTab("Utilities", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: appendage_tabs.width, options: ["Connector", "Energy Sink", "Joint"]})] );
@@ -351,6 +411,17 @@ export class BuildScene extends Scene {
        } else {
            Assets.module_w.style.visibility = 'hidden';
            Assets.module_h.style.visibility = 'hidden';
+       }
+
+       if (screen_vars.page == 2){
+          if (simulating){
+              updateAppendage(mock_game, temp_appendage, delta);
+              mock_game.frame++;
+          } else {
+              //Reset game state
+              mock_game.frame = 0;
+              mock_game.quanta = [];
+          }
        }
    }
 
@@ -486,7 +557,7 @@ export class BuildScene extends Scene {
            //Draw appendage hull to dimensions set in textboxes
            var rows = temp_module_h;
            var cols = temp_module_w;
-           c.strokeStyle = "green";
+
            for (var i = 0; i < rows; i++){
                for (var j = 0; j < cols; j++){
                    c.drawImage(images["appendage_tile"], this.mid_w + block_width * (j - temp_module_w / 2), this.mid_h - 200 + 25 + block_width * i + 40, block_width, block_width);
@@ -494,6 +565,31 @@ export class BuildScene extends Scene {
                    c.lineWidth = 2;
                    c.strokeRect(this.mid_w + block_width * (j - temp_module_w / 2), this.mid_h - 200 + 25 + block_width * i + 40, block_width, block_width);
                }
+           }
+           //Outline to indicate an appendage with mainframe
+           if (temp_appendage.torso){
+               c.strokeStyle = "green";
+               c.lineWidth = 5;
+               c.strokeRect(this.mid_w + block_width * (-temp_module_w / 2), this.mid_h - 200 + 25 + 40, block_width * cols, block_width * rows);
+           }
+
+           //Draw batteries below everything
+           for (const b of temp_appendage.batteries){
+               var color = resource_colours[b.type];
+               var coords_x = b.pos.x;
+               var coords_y = b.pos.y;
+               var draw_coords = this.screenXY(coords_x, coords_y);
+               c.fillStyle = color;
+               c.strokeStyle = color;
+               c.beginPath();
+               c.roundRect(draw_coords.x, draw_coords.y, block_width, block_width, block_width / 5);
+               c.stroke();
+               c.fill();
+               c.fillStyle = "rgba(0, 0, 0, 0.3)";
+               c.beginPath();
+               c.roundRect(draw_coords.x, draw_coords.y, block_width, block_width, block_width / 5);
+               c.stroke();
+               c.fill();
            }
 
            //Draw modules
@@ -515,7 +611,9 @@ export class BuildScene extends Scene {
 
            //Sinks (1 x 1)
            for (const s of temp_appendage.sinks){
-               c.drawImage(images["reactor"], this.mid_w + block_width * (s.pos.x - temp_module_w / 2), this.mid_h - 200 + 25 + block_width * s.pos.y + 40, s.width * block_width, s.height * block_width);
+               var img = images["reactor"];
+               if (s.control) img = images["Mainframe"];
+               c.drawImage(img, this.mid_w + block_width * (s.pos.x - temp_module_w / 2), this.mid_h - 200 + 25 + block_width * s.pos.y + 40, s.width * block_width, s.height * block_width);
            }
 
            for (const j of temp_appendage.joints){
@@ -541,16 +639,18 @@ export class BuildScene extends Scene {
                //Bezier curves as wires
                c.strokeStyle = "rgb(255, 255, 255)";
                c.lineWidth = 5;
-               var cp1 = {x: (con.output_edge[0].x + con.output_edge[1].x + 0.5) * block_width / 2.0, y: (con.output_edge[0].y + con.output_edge[1].y + 0.5) * block_width / 2.0};
-               var cp2 = {x: (con.input_edge[0].x + con.input_edge[1].x + 0.5) * block_width / 2.0, y: (con.input_edge[0].y + con.input_edge[1].y + 0.5) * block_width / 2.0};
+               var x_offset = this.mid_w - block_width * (temp_module_w / 2);
+               var y_offset = this.mid_h - 200 + 25 + 40;
+               var cp1 = {x: x_offset + (con.output_edge[0].x + con.output_edge[1].x + 0.5) * block_width / 2.0, y: y_offset + (con.output_edge[0].y + con.output_edge[1].y + 0.5) * block_width / 2.0};
+               var cp2 = {x: x_offset + (con.input_edge[0].x + con.input_edge[1].x + 0.5) * block_width / 2.0, y: y_offset + (con.input_edge[0].y + con.input_edge[1].y + 0.5) * block_width / 2.0};
                c.beginPath();
-               c.moveTo((con.output_edge[0].x + 0.5) * block_width, (con.output_edge[0].y + 0.5) * block_width);
-               c.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, (con.input_edge[0].x + 0.5) * block_width, (con.input_edge[0].y + 0.5) * block_width);
+               c.moveTo(x_offset + (con.output_edge[0].x + 0.5) * block_width, y_offset + (con.output_edge[0].y + 0.5) * block_width);
+               c.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, x_offset + (con.input_edge[0].x + 0.5) * block_width, y_offset + (con.input_edge[0].y + 0.5) * block_width);
                c.stroke();
 
                c.beginPath();
-               c.moveTo((con.output_edge[1].x + 0.5) * block_width, (con.output_edge[1].y + 0.5) * block_width);
-               c.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, (con.input_edge[1].x + 0.5) * block_width, (con.input_edge[1].y + 0.5) * block_width);
+               c.moveTo(x_offset + (con.output_edge[1].x + 0.5) * block_width, y_offset + (con.output_edge[1].y + 0.5) * block_width);
+               c.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, x_offset + (con.input_edge[1].x + 0.5) * block_width, y_offset + (con.input_edge[1].y + 0.5) * block_width);
                c.stroke();
            }
 
@@ -565,6 +665,18 @@ export class BuildScene extends Scene {
                //ctx.stroke();
                c.fill();
             }
+
+           //Quanta
+           for (const q of mock_game.quanta){
+               var coords_x = q.pos.x;
+               var coords_y = q.pos.y;
+               var draw_coords = this.screenXY(coords_x, coords_y);
+               if (!q.type.includes("energy") && !q.type.includes("projectile")){
+                   blurCircle(c, draw_coords.x, draw_coords.y, block_width / 16 * Math.sqrt(q.amount), q.type);
+               } else if (q.type.includes("energy")){
+                   blurCircle(c, draw_coords.x, draw_coords.y, block_width / 16 * Math.sqrt(q.amount), q.type, true);
+               }
+           }
 
            /**Draw selections**/
 
@@ -643,13 +755,27 @@ export class BuildScene extends Scene {
                        c.drawImage(sprite, flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, obj.width * block_width, obj.height * block_width);
 
                        c.fillRect(flags["mousePos"].x - block_width / 2, flags["mousePos"].y - block_width / 2, obj.width * block_width, obj.height * block_width);
+                   } else if (cur_tab == "Batteries") {
+                       //var unit_type = tab_panel.tab_items[cur_tab][0].options[selection];
+                       var unit_color = resource_colours[selection_type];
+                       c.fillStyle = unit_color;
+                       c.beginPath();
+                       c.roundRect(flags["mousePos"].x - 30, flags["mousePos"].y - 30, block_width, block_width, block_width / 3);
+                       c.stroke();
+                       c.fill();
                    }
 
                }
            }
        } else if (screen_vars.page == 3){
-           /**Draw selections**/
+           /* Torso placement */
+           c.strokeStyle = "magenta";
+           c.fillStyle = "#32527b";
+           c.beginPath();
+           c.roundRect(this.mid_w - 200, this.mid_h - 200, 400, 400, 20);
+           c.stroke();
 
+           /**Draw selections**/
            var tab_panel = this.tabbed_panels[3][0];
            //Units
            var cur_tab = tab_panel.cur_tab;
@@ -657,12 +783,12 @@ export class BuildScene extends Scene {
                var selection = tab_panel.tab_items[cur_tab][0].state;
                if (selection != -1){
                    var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
-
+                   var appendage = ECS.blueprints.appendages[selection_type];
                    var sprite = images[selection_type];
                    var img_width = sprite.width;
                    var img_height = sprite.height;
                    var ratio = img_height / img_width;
-                   c.drawImage(sprite, flags["mousePos"].x - 30, flags["mousePos"].y - 30, 60, 60);
+                   c.drawImage(sprite, flags["mousePos"].x - 30, flags["mousePos"].y - 30, 10 * appendage.width, 10 * appendage.height);
 
 
                }
@@ -758,13 +884,13 @@ export class BuildScene extends Scene {
                     var selection = tab_panel.tab_items[cur_tab][0].state;
                     if (selection != -1){
                         var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
-
+                        var row = ~~(i / temp_module_w);
+                        var col = i % temp_module_w;
                         if (cur_tab == "Modules") {
                             var mod = copyObject(ECS.blueprints.modules[selection_type]);
 
                             //Add module to base plate of appendage
-                            var row = ~~(i / temp_module_w);
-                            var col = i % temp_module_w;
+
 
                             if (row + mod.height <= temp_appendage.height && col + mod.width <= temp_appendage.width && highlight_color == "rgba(0, 255, 0, 0.5)"){
                                 mod.pos.x = col;
@@ -776,8 +902,6 @@ export class BuildScene extends Scene {
                             var weapon = copyObject(ECS.blueprints.weapons[selection_type]);
 
                             //Add module to base plate of appendage
-                            var row = ~~(i / temp_module_w);
-                            var col = i % temp_module_w;
 
                             if (row + weapon.height <= temp_appendage.height && col + weapon.width <= temp_appendage.width && highlight_color == "rgba(0, 255, 0, 0.5)"){
                                 weapon.pos.x = col;
@@ -785,9 +909,7 @@ export class BuildScene extends Scene {
                                 temp_appendage.weapons.push(weapon);
                             }
                         } else if (cur_tab == "Utilities"){
-                            var row = ~~(i / temp_module_w);
-                            var col = i % temp_module_w;
-                            if (selection_type == "Energy Sink"){
+                            if (selection_type == "Energy Sink" || selection_type == "Mainframe"){
                                 var util = copyObject(ECS.blueprints.utilities[selection_type]);
 
 
@@ -795,6 +917,7 @@ export class BuildScene extends Scene {
                                     util.pos.x = col;
                                     util.pos.y = row;
                                     temp_appendage.sinks.push(util);
+                                    if (selection_type == "Mainframe") temp_appendage.torso = true;
                                 }
                             } else if (selection_type == "Joint"){
                                 var util = copyObject(ECS.blueprints.utilities[selection_type]);
@@ -842,6 +965,9 @@ export class BuildScene extends Scene {
                                 }
                                 console.log(temp_connector)
                             }
+                        } else if (cur_tab == "Batteries"){
+                            var battery = Battery({type: selection_type, pos: {x: col, y: row}, rate: 30, quantity: 6});
+                            temp_appendage.batteries.push(battery);
                         }
                         //tab_panel.tab_items[cur_tab][0].state = -1;
                         console.log(temp_appendage)
