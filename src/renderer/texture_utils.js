@@ -1,7 +1,7 @@
 function isPowerOf2(value) {
   return (value & (value - 1)) === 0;
 }
-function makeTexture(texture, data, c, repeat=false){
+function makeTexture(gl, texture, data, c, repeat=false){
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, data);
     if (isPowerOf2(c.width) && isPowerOf2(c.height)) {
@@ -18,15 +18,15 @@ function makeTexture(texture, data, c, repeat=false){
     }
 }
 
-function loadTexture(texture, path){
+export function loadTexture(gl, texture, path){
     var image = new Image();
     image.src = path;
     image.addEventListener('load', function() {
-        makeTexture(texture, image, image);
+        makeTexture(gl, texture, image, image);
     });
 }
 
-function genTexture(texture, draw_func, params=null){
+export function genTexture(gl, texture, draw_func, params=null){
     var c = document.createElement('canvas');
     if( c.getContext) {
         c.width = 108;
@@ -34,7 +34,7 @@ function genTexture(texture, draw_func, params=null){
         ctx = c.getContext("2d");
         draw_func(c, ctx, params);
         d = ctx.getImageData(0, 0, c.width, c.height);
-        makeTexture(texture, d, c);
+        makeTexture(gl, texture, d, c);
     }
 }
 

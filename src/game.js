@@ -5,13 +5,15 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.135.0/build/three.m
 import {Module, Connector, Weapon, Joint, Sink, Mainframe, createModuleImage} from "./gameObjects/module.js";
 import {Cell, Router, Grid} from "./gameObjects/cell.js";
 import {Shell, Appendage, Torso, createAppendageImage} from "./gameObjects/appendage.js";
-import {Titan} from "./gameObjects/titan.js";
+import {Titan, draw_appendage_gl} from "./gameObjects/titan.js";
 import {Battery} from "./gameObjects/battery.js";
 
 import {Vector2D} from "./vector2D.js";
 import {BuildScene} from "./subscenes/build_scene.js";
 import {MarketScene} from "./subscenes/market_scene.js";
 import {copyObject} from "./utils.js";
+
+import {GL_Renderer} from "./renderer/gl_renderer.js";
 
 import module_data from '../presets/modules.json' assert { type: 'json' };
 import weapon_data from '../presets/weapons.json' assert { type: 'json' };
@@ -46,8 +48,8 @@ export function resize() {
     canvas.height = window.innerHeight;
     overlay.width = window.innerWidth;
     overlay.height = window.innerHeight;
-    gl.width = window.innerWidth;
-    gl.height = window.innerHeight;
+    gl.width = window.innerWidth / 2;
+    gl.height = window.innerHeight / 2;
 };
 
 export function init(){
@@ -61,8 +63,8 @@ export function init(){
     Assets.canvas.style.top = "0px";
     Assets.overlay.style.left = "0px";
     Assets.overlay.style.top = "0px";
-    Assets.gl.style.left = "0px";
-    Assets.gl.style.top = "0px";
+    Assets.gl.style.left = (window.innerWidth / 4) + "px";
+    Assets.gl.style.top = (window.innerHeight / 4) + "px";
 
     Assets.uniforms.u_resolution.value.x = Assets.gl.width;
     Assets.uniforms.u_resolution.value.y = Assets.gl.height;
@@ -155,17 +157,58 @@ export function init(){
         flags["left_down"] = 0;
     }, false);
 
+    //Mouse scroll event
+    canvas.addEventListener('wheel',function(event){
+        if (event.deltaY < 0) {
+            console.log("Mouse wheel up");
+            flags["wheel"] = 1;
+        } else if (event.deltaY > 0){
+            console.log("Mouse wheel down");
+            flags["wheel"] = -1;
+        } else {
+            flags["wheel"] = 0;
+        }
+    }, false);
+
     //Key presses
     document.addEventListener('keydown', function(e) {
         if(e.keyCode == 80) { //P key
             if (sm.cur_scene.name === "game") pause = (pause + 1) % 2;
         }
-        //Debug only
-        else if(e.keyCode == 38) { //up key (raise water level)
+        else if(e.keyCode == 87 || e.keyCode == 38) { //up key
             console.log("Up key pressed");
+            flags["v"] = -1;
         }
-        else if(e.keyCode == 40) { //down key (lower water level)
+        else if(e.keyCode == 83 || e.keyCode == 40) { //down key
             console.log("Down key pressed");
+            flags["v"] = 1;
+        }
+        else if(e.keyCode == 65 || e.keyCode == 37) { //left key
+            console.log("Left key pressed");
+            flags["h"] = -1;
+        }
+        else if(e.keyCode == 68 || e.keyCode == 39) { //right key
+            console.log("Right key pressed");
+            flags["h"] = 1;
+        }
+    });
+
+    document.addEventListener('keyup', function(e) {
+        if(e.keyCode == 87 || e.keyCode == 38) { //up key
+            console.log("Up key released");
+            flags["v"] = 0;
+        }
+        else if(e.keyCode == 83 || e.keyCode == 40) { //down key
+            console.log("Down key released");
+            flags["v"] = 0;
+        }
+        else if(e.keyCode == 65 || e.keyCode == 37) { //left key
+            console.log("Left key released");
+            flags["h"] = 0;
+        }
+        else if(e.keyCode == 68 || e.keyCode == 39) { //right key
+            console.log("Right key released");
+            flags["h"] = 0;
         }
     });
 
@@ -177,6 +220,8 @@ class Game {
     constructor(){
         this.score = 0;
         this.frame = 0;
+        this.renderer = new GL_Renderer(Assets.gl);
+        this.renderer.loadTextures(images);
         //Assets.SpriteFactory('../sprites/ship1.png', 0);
         //Assets.SpriteFactory('../sprites/ship1.png', 1);
 
@@ -293,7 +338,7 @@ class Game {
                                       "children": children, "pos": {x:-10, y: -10}};
 
         var test_torso = Torso(test_torso_config);
-
+        this.test_torso = test_torso;
 
         ECS.entities.appendages[test_torso.id] = test_torso;
         ECS.blueprints.appendages[test_torso.id] = test_torso;
@@ -346,6 +391,11 @@ class Game {
 
         this.current_titan.update(delta);
         ECS.systems.update(this, delta);
+
+        //GL renderer updates
+
+        this.renderer.updateCamera(delta);
+        this.renderer.cursorToScreen(flags["mousePos"].x, flags["mousePos"].y);
         this.frame++;
     }
     render(delta){
@@ -353,6 +403,13 @@ class Game {
 
         ECS.systems.render(this, delta);
 
+        this.renderer.render(this);
+        draw_appendage_gl(this.renderer, this.test_torso, this);
+
+        if (flags['left_down'] == 1){
+            this.renderer.cursorToScreen(flags["mousePos"].x, flags["mousePos"].y);
+            this.renderer.drawRect(this.renderer.selected_coords.x, this.renderer.selected_coords.y, 1, 1, [1.0, 0.0, 0.0], 1.0)
+        }
 
         // var newCanvas = document.createElement('canvas');
         // newCanvas.width = Assets.canvas.width

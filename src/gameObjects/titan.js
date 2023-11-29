@@ -566,3 +566,83 @@ function draw_appendage(ap, game, ctx){
         }
     }
 }
+
+export function draw_appendage_gl(renderer, ap, game){
+
+    //First draw appendage base tiles
+    for (var i = 0; i < ap.height; i++){
+        for (var j = 0; j < ap.width; j++){
+            renderer.drawRect(j, -i, 1, 1, [0.0, 0.0, 0.0], 1.0);
+            renderer.drawSprite("appendage_tile", j + 0.05, -(i+0.05), 0.90, 0.90);
+        }
+    }
+    //Batteries (under everything)
+    for (const b of ap.batteries){
+        var color = resource_colours[b.type];
+        renderer.drawRect(b.pos.x, -b.pos.y, 1, 1, [1.0, 1.0, 1.0], 0.4);
+    }
+
+    //Modules
+    for (const mod of ap.modules){
+        //var img = images[mod.name];
+        renderer.drawSprite(mod.name, mod.pos.x, -mod.pos.y, mod.width, mod.height);
+    }
+
+    //Connectors
+    for (const c of ap.connectors){
+        //output edge
+        renderer.drawRect(c.output_edge[0].x, -c.output_edge[0].y, c.output_edge[1].x - c.output_edge[0].x + 1, c.output_edge[1].y - c.output_edge[0].y + 1, [0.0, 1.0, 1.0], 0.6);
+
+        //input edge
+        renderer.drawRect(c.input_edge[0].x, -c.input_edge[0].y, c.input_edge[1].x - c.input_edge[0].x + 1, c.input_edge[1].y - c.input_edge[0].y + 1, [1.0, 0.0, 1.0], 0.6);
+
+        //Bezier curves as wires
+        // ctx.strokeStyle = "rgb(255, 255, 255)";
+        // ctx.lineWidth = 5;
+        // var cp1 = {x: (c.output_edge[0].x + c.output_edge[1].x + 0.5) * game.grid_width / 2.0, y: (c.output_edge[0].y + c.output_edge[1].y + 0.5) * game.grid_width / 2.0};
+        // var cp2 = {x: (c.input_edge[0].x + c.input_edge[1].x + 0.5) * game.grid_width / 2.0, y: (c.input_edge[0].y + c.input_edge[1].y + 0.5) * game.grid_width / 2.0};
+        // ctx.beginPath();
+        // ctx.moveTo((c.output_edge[0].x + 0.5) * game.grid_width, (c.output_edge[0].y + 0.5) * game.grid_width);
+        // ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, (c.input_edge[0].x + 0.5) * game.grid_width, (c.input_edge[0].y + 0.5) * game.grid_width);
+        // ctx.stroke();
+        //
+        // ctx.beginPath();
+        // ctx.moveTo((c.output_edge[1].x + 0.5) * game.grid_width, (c.output_edge[1].y + 0.5) * game.grid_width);
+        // ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, (c.input_edge[1].x + 0.5) * game.grid_width, (c.input_edge[1].y + 0.5) * game.grid_width);
+        // ctx.stroke();
+    }
+
+    //Weapons
+    for (const w of ap.weapons){
+        renderer.drawSprite(w.type, w.pos.x, -w.pos.y, w.width, w.height);
+        // var img = images[w.type];
+        // var angle = Math.PI / 2 * w.orientation;
+        // ctx.translate(w.pos.x * game.grid_width, w.pos.y * game.grid_width);
+        // ctx.rotate(angle);
+        // ctx.drawImage(img, 0, 0, game.grid_width * w.width, game.grid_width * w.width * img.height / img.width);
+        // ctx.rotate(-angle);
+        // ctx.translate(-w.pos.x * game.grid_width, -w.pos.y * game.grid_width);
+    }
+
+    //Sinks (1 x 1)
+    for (const s of ap.sinks){
+        renderer.drawSprite("reactor", s.pos.x, -s.pos.y, s.width, s.height);
+    }
+
+    //joints
+    for (const j of ap.joints){
+        renderer.drawSprite("joint-hinge", j.pos.x, -j.pos.y, j.width, j.height);
+    }
+
+    //Quanta
+    for (const q of game.quanta){
+        if (!q.type.includes("energy") && !q.type.includes("projectile")){
+            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), [0.0, 0.0, 1.0], 1.0);
+            //blurCircle(ctx, q.pos.x * game.grid_width, q.pos.y * game.grid_width, game.grid_width / 16 * Math.sqrt(q.amount), q.type);
+
+        } else if (q.type.includes("energy")){
+            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), [0.0, 0.0, 1.0], 1.0);
+            //blurCircle(ctx, q.pos.x * game.grid_width, q.pos.y * game.grid_width, game.grid_width / 16 * Math.sqrt(q.amount), q.type, true);
+        }
+    }
+}
