@@ -331,7 +331,7 @@ class Game {
             var test_appendage_2 = copyObject(test_appendage);
             //test_appendage_2.pos = {x:Assets.canvas.width, y:Assets.canvas.height / 2};
             //test_appendage_2.angle = Math.PI;
-            test_appendage.children.push(test_appendage_2.id);
+            //test_appendage.children.push(test_appendage_2.id);
             console.log(test_appendage.children)
             ECS.entities.appendages[test_appendage.id] = test_appendage;
             ECS.entities.appendages[test_appendage_2.id] = test_appendage_2;
@@ -348,7 +348,7 @@ class Game {
                                       "modules": [testm, testm2], "weapons": test_weapons,
                                       "batteries": this.batteries, "connectors": test_connectors,
                                       "joints": [test_joint, Joint(-1, 2), Joint(20, 17), Joint(-1, 17)], "sinks": test_sinks,
-                                      "children": children, "pos": {x:-10, y: -10}};
+                                      "children": [], "pos": {x:-10, y: -10}};
 
         var test_torso = Torso(test_torso_config);
         this.test_torso = test_torso;
@@ -384,6 +384,9 @@ class Game {
                       ];
         this.grid_width = 10;
 
+
+        this.battle = false;
+
     }
     update(delta){
         // sprites[0].position.set(this.score, this.score, 0);
@@ -402,8 +405,10 @@ class Game {
             }
         }
 
-        this.current_titan.update(delta);
-        ECS.systems.update(this, delta);
+        if (this.battle){
+            this.current_titan.update(delta);
+            ECS.systems.update(this, delta);
+        }
 
         //GL renderer updates
 

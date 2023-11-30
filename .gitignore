@@ -1,0 +1,4 @@
+*.zip
+/fonts/**
+/audio/**
+/sprites/**

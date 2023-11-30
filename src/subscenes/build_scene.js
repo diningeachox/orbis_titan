@@ -812,7 +812,13 @@ export class BuildScene extends Scene {
                 draw_appendage_gl(renderer, temp_titan_config.torso, null);
            }
            for (const x of temp_titan_config.appendages){
-                draw_appendage_gl(renderer, x, null);
+                var cur_ap = ECS.entities.appendages[x];
+                draw_appendage_gl(renderer, cur_ap, null);
+                while (cur_ap.children.length > 0){
+                    cur_ap = ECS.entities.appendages[cur_ap.children[0]];
+                    console.log(cur_ap)
+                    draw_appendage_gl(renderer, cur_ap, null);
+                }
            }
 
            /**Draw selections**/
@@ -1070,9 +1076,11 @@ export class BuildScene extends Scene {
                             } else {
                                 var good_to_go = checkLinks(appendage, renderer.selected_coords.x, -renderer.selected_coords.y);
                                 if (good_to_go != null){
+                                    //debugger;
                                     var copy = copyObject(appendage);
-                                    temp_titan_config.appendages.push(copy);
-                                    good_to_go.ap.children.push(copy);
+                                    ECS.entities.appendages[copy.id] = copy;
+                                    if (good_to_go.ap.torso == true) temp_titan_config.appendages.push(copy.id);
+                                    good_to_go.ap.children.push(copy.id);
                                     good_to_go.joint.linked = true;
                                 }
 
@@ -1173,7 +1181,6 @@ export class BuildScene extends Scene {
                                gl_highlight_color = [0.0, 1.0, 0.0];
                            }
                        } else {
-                           console.log(appendage)
                            var good_to_go = checkLinks(appendage, renderer.selected_coords.x, -renderer.selected_coords.y);
                            if (good_to_go != null){
                               gl_highlight_color = [0.0, 1.0, 0.0];
@@ -1300,13 +1307,26 @@ function checkLinks(ap, x, y){
             }
         }
 
-        for (const a of temp_titan_config.appendages){
+        for (const x of temp_titan_config.appendages){
+            var a = ECS.entities.appendages[x];
             for (const j of a.joints){
                 if (j.linked == false){
                     var joint_pos = {x: a.pos.x + j.pos.x * Math.cos(a.angle) - (j.pos.y + 1) * Math.sin(a.angle), y: a.pos.y + j.pos.x * Math.sin(a.angle) + (j.pos.y + 1) * Math.cos(a.angle)};
 
                     var dist = l2_dist_squared(orig_joint_pos, joint_pos);
                     if (dist <=1) return {ap: a, joint: j};
+                }
+            }
+            //Go down the chain
+            while (a.children.length > 0){
+                a = ECS.entities.appendages[a.children[0]];
+                for (const j of a.joints){
+                    if (j.linked == false){
+                        var joint_pos = {x: a.pos.x + j.pos.x * Math.cos(a.angle) - (j.pos.y + 1) * Math.sin(a.angle), y: a.pos.y + j.pos.x * Math.sin(a.angle) + (j.pos.y + 1) * Math.cos(a.angle)};
+
+                        var dist = l2_dist_squared(orig_joint_pos, joint_pos);
+                        if (dist <=1) return {ap: a, joint: j};
+                    }
                 }
             }
         }
