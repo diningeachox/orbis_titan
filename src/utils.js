@@ -90,6 +90,14 @@ export function l1_dist(v, w){
     return Math.abs(v.x-w.x) + Math.abs(v.y-w.y);
 }
 
+export function l2_dist(v, w){
+    return Math.sqrt((v.x-w.x)*(v.x-w.x) + (v.y-w.y)*(v.y-w.y));
+}
+
+export function l2_dist_squared(v, w){
+    return (v.x-w.x)*(v.x-w.x) + (v.y-w.y)*(v.y-w.y);
+}
+
 /* Set difference A \ B */
 export function set_difference(A, B){
     let result = [];

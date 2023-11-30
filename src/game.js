@@ -33,6 +33,7 @@ var lag = 0;
 var prev = Date.now();
 var elapsed;
 
+export var renderer;
 // Game scenes
 export var game;
 export var game_scene;
@@ -99,6 +100,8 @@ export function init(){
     }
 
     //Appendages
+    renderer = new GL_Renderer(Assets.gl);
+    renderer.loadTextures(images);
 
     sm = new Scene.SceneManager();
     menu = new Scene.Menu();
@@ -190,6 +193,12 @@ export function init(){
         else if(e.keyCode == 68 || e.keyCode == 39) { //right key
             console.log("Right key pressed");
             flags["h"] = 1;
+        } else if(e.keyCode == 88) { //right key
+            console.log("X key pressed");
+            flags["rotate"] = 1;
+        } else if(e.keyCode == 90) { //right key
+            console.log("Z key pressed");
+            flags["rotate"] = -1;
         }
     });
 
@@ -209,6 +218,12 @@ export function init(){
         else if(e.keyCode == 68 || e.keyCode == 39) { //right key
             console.log("Right key released");
             flags["h"] = 0;
+        } else if(e.keyCode == 88) { //right key
+            console.log("X key released");
+            flags["rotate"] = 0;
+        } else if(e.keyCode == 90) { //right key
+            console.log("Z key released");
+            flags["rotate"] = 0;
         }
     });
 
@@ -220,8 +235,6 @@ class Game {
     constructor(){
         this.score = 0;
         this.frame = 0;
-        this.renderer = new GL_Renderer(Assets.gl);
-        this.renderer.loadTextures(images);
         //Assets.SpriteFactory('../sprites/ship1.png', 0);
         //Assets.SpriteFactory('../sprites/ship1.png', 1);
 
@@ -311,7 +324,7 @@ class Game {
             var test_appendage_config = {"width": 20, "height": 7, "shell": [],
                                         "modules": [testm, testm2], "weapons": test_weapons,
                                         "batteries": this.batteries, "connectors": test_connectors,
-                                        "joints": [test_joint], "sinks": test_sinks,
+                                        "joints": [test_joint, Joint(-1, 2)], "sinks": test_sinks,
                                         "children": [], "pos": {x:0, y:0}};
             var test_appendage = Appendage(test_appendage_config);
             //var test_appendage_2 = Object.assign({}, test_appendage);
@@ -334,7 +347,7 @@ class Game {
         var test_torso_config = {"width": 20, "height": 20, "shell": [],
                                       "modules": [testm, testm2], "weapons": test_weapons,
                                       "batteries": this.batteries, "connectors": test_connectors,
-                                      "joints": [test_joint], "sinks": test_sinks,
+                                      "joints": [test_joint, Joint(-1, 2), Joint(20, 17), Joint(-1, 17)], "sinks": test_sinks,
                                       "children": children, "pos": {x:-10, y: -10}};
 
         var test_torso = Torso(test_torso_config);
@@ -394,22 +407,36 @@ class Game {
 
         //GL renderer updates
 
-        this.renderer.updateCamera(delta);
-        this.renderer.cursorToScreen(flags["mousePos"].x, flags["mousePos"].y);
+        renderer.updateCamera(delta);
+        const bcr = Assets.gl.getBoundingClientRect();
+        renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
         this.frame++;
     }
     render(delta){
 
 
-        ECS.systems.render(this, delta);
+        //ECS.systems.render(this, delta);
+        Assets.c.drawImage(images["menu"], (Assets.canvas.width) / 6 + Math.sin(this.frame / 160) * 100, 0, (Assets.canvas.width) * 2 / 3, Assets.canvas.height);
+        var r = 1 / 5;
+        var gradient = c.createLinearGradient(0, 0, canvas.width, 0);
+        // Add three color stops
+        gradient.addColorStop(0, "rgba(0, 0, 0, 1.0)");
+        gradient.addColorStop(r, "rgba(0, 0, 0, 1.0)");
+        gradient.addColorStop(0.5, "rgba(0, 0, 0, "+ (Math.sin(this.frame / 40) * 0.1 + 0.1) +")");
+        gradient.addColorStop(1 - r, "rgba(0, 0, 0, 1.0)");
+        gradient.addColorStop(1, "rgba(0, 0, 0, 1.0)");
+        c.fillStyle = gradient;
+        c.fillRect(0, 0, canvas.width, canvas.height);
 
-        this.renderer.render(this);
-        draw_appendage_gl(this.renderer, this.test_torso, this);
+        //renderer.render(this);
+        //draw_appendage_gl(renderer, this.test_torso, this);
 
-        if (flags['left_down'] == 1){
-            this.renderer.cursorToScreen(flags["mousePos"].x, flags["mousePos"].y);
-            this.renderer.drawRect(this.renderer.selected_coords.x, this.renderer.selected_coords.y, 1, 1, [1.0, 0.0, 0.0], 1.0)
-        }
+        // if (flags['left_down'] == 1){
+        //
+        //     const bcr = Assets.gl.getBoundingClientRect();
+        //     renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
+        //     renderer.drawRect(renderer.selected_coords.x, renderer.selected_coords.y, 1, 1, [1.0, 0.0, 0.0], 1.0)
+        // }
 
         // var newCanvas = document.createElement('canvas');
         // newCanvas.width = Assets.canvas.width

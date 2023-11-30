@@ -1,18 +1,20 @@
 import {Scene, SceneManager, changeScene, screen_vars} from "../scenes.js";
-import {game, game_scene, build_scene} from "../game.js";
+import {game, game_scene, build_scene, renderer} from "../game.js";
 import * as Assets from '../assets.js';
 import {Button, DropDown, Region, TabbedPanel, StateMenu, IconMenu} from "../button.js";
 import {playSound} from "../sound.js";
 import {resource_colours, formulas, keys, char_keys} from "../gameObjects/resource.js";
-import {isNum, copyObject} from "../utils.js";
+import {isNum, copyObject, l2_dist_squared} from "../utils.js";
 import {rectvrect} from "../collision.js";
 import {Chip, ChipFactory} from "../gameObjects/cell.js";
 import {Module, ModuleFactory, Connector, calcEdge} from "../gameObjects/module.js";
 import {Battery} from "../gameObjects/battery.js";
-import {blurCircle} from "../gameObjects/titan.js";
+import {blurCircle, draw_appendage_gl} from "../gameObjects/titan.js";
 import {Vector2D} from "../vector2D.js";
 import {updateAppendage} from "../system.js";
+import {GL_Renderer} from "../renderer/gl_renderer.js";
 
+//JSON data
 import module_data from '../../presets/modules.json' assert { type: 'json' };
 import weapon_data from '../../presets/weapons.json' assert { type: 'json' };
 
@@ -23,9 +25,11 @@ var c = Assets.c;
 var ol = Assets.ol;
 
 var highlight_color = "rgba(0, 255, 0, 0.5)";
+var gl_highlight_color = [0.0, 1.0, 0.0];
 
 // Mock game object to simulate the action on appendages
 var mock_game = {quanta: [], frame: 0};
+
 
 //Objects within the scene
 var cell_button = new Button({x: 110, y:100, width:200, height:50, label:"Chips",
@@ -64,6 +68,7 @@ var module_button = new Button({x: 110, y:170, width:200, height:50, label:"Modu
            playSound(sfx_sources["button_click"].src, sfx_ctx);
            Assets.name_field.placeholder = "Enter name for titan";
            Assets.name_field.value = '';
+           update_regions(temp_module_w, temp_module_h, screen_vars.page);
        }
       });
  var back_button = new Button({x: 110, y:Assets.canvas.height - 100, width:200, height:50, label:"Back",
@@ -236,20 +241,28 @@ function update_regions(w, h, page){
 
     block_width = Math.min(80, Math.min(canvas.width / (2 * temp_module_w), canvas.width / (2 * temp_module_h)));
     block_width = Math.min(block_width, canvas.height / (2 * temp_module_h));
-    for (var i = 0; i < h; i++){
-        for (var j = 0; j < w; j++){
-            build_scene.regions[page].push(Region(build_scene.mid_w + block_width * (j - temp_module_w / 2 + 0.5), build_scene.mid_h - 200 + 25 + block_width * (i + 0.5) + 40, block_width, block_width));
+    if (page != 3 && page != 0){
+        for (var i = 0; i < h; i++){
+            for (var j = 0; j < w; j++){
+                build_scene.regions[page].push(Region(build_scene.mid_w + block_width * (j - temp_module_w / 2 + 0.5), build_scene.mid_h - 200 + 25 + block_width * (i + 0.5) + 40, block_width, block_width));
 
-            if (page == 1) {
-                //build_scene.regions[page].push(Region(build_scene.mid_w - 200 + 25 + 80 * j + 40, build_scene.mid_h - 200 + 25 + 80 * i + 40, 80, 80));
-                temp_module.push("");
-            } else if (page == 2){
-                //build_scene.regions[page].push(Region(build_scene.mid_w + block_width * (j - temp_module_w / 2 + 0.5), build_scene.mid_h - 200 + 25 + block_width * (i + 0.5) + 40, block_width, block_width));
+                if (page == 1) {
+                    //build_scene.regions[page].push(Region(build_scene.mid_w - 200 + 25 + 80 * j + 40, build_scene.mid_h - 200 + 25 + 80 * i + 40, 80, 80));
+                    temp_module.push("");
+                } else if (page == 2){
+                    //build_scene.regions[page].push(Region(build_scene.mid_w + block_width * (j - temp_module_w / 2 + 0.5), build_scene.mid_h - 200 + 25 + block_width * (i + 0.5) + 40, block_width, block_width));
+                }
             }
         }
+
+    } else if (page == 3){
+        //one big region.
+        build_scene.regions[page].push(Region(build_scene.mid_w, build_scene.mid_h, build_scene.mid_w, build_scene.mid_h));
     }
 
 }
+
+var temp_titan_config = {pos: new Vector2D(0, 0), appendages: [], torso: null};
 
 /***
 Subscenes for build mode
@@ -383,7 +396,7 @@ export class BuildScene extends Scene {
      Titan page
      ***/
      var titan_tabs = new TabbedPanel({
-        x: Assets.canvas.width - 600, y: 150, tabs:["Appendages", "Torsos"]
+        x: Assets.canvas.width - 400, y: 150, tabs:["Appendages", "Torsos"]
      });
      var new_titan_button = new Button({x: Assets.canvas.width / 2 - 150, y:Assets.canvas.height - 100, width:200, height:50, label:"Create titan",
           onClick: function(){
@@ -391,8 +404,8 @@ export class BuildScene extends Scene {
               //createModule(Assets.name_field.value);
           }
          });
-     titan_tabs.addToTab("Appendages", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.appendages) })] );
-     titan_tabs.addToTab("Torsos", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.torsos)})] );
+     titan_tabs.addToTab("Appendages", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.appendages) })] );
+     titan_tabs.addToTab("Torsos", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.torsos)})] );
      // titan_tabs.addToTab("Modules", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(module_data)})] );
      // titan_tabs.addToTab("Weapons", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(weapon_data)})] );
      // titan_tabs.addToTab("Utilities", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: appendage_tabs.width, options: ["Connector", "Energy Sink", "Joint"]})] );
@@ -412,7 +425,7 @@ export class BuildScene extends Scene {
            Assets.module_w.style.visibility = 'hidden';
            Assets.module_h.style.visibility = 'hidden';
        }
-
+       Assets.gl.style.zIndex = 0;
        if (screen_vars.page == 2){
           if (simulating){
               updateAppendage(mock_game, temp_appendage, delta);
@@ -421,6 +434,25 @@ export class BuildScene extends Scene {
               //Reset game state
               mock_game.frame = 0;
               mock_game.quanta = [];
+          }
+       } else if (screen_vars.page == 3){
+          renderer.updateCamera(delta); //Update webGL scene
+
+          const bcr = Assets.gl.getBoundingClientRect();
+          renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top); //Update world coords for cursor
+          Assets.gl.style.zIndex = 8;
+
+          //Rotate appendages
+          var tab_panel = this.tabbed_panels[3][0];
+          //Units
+          var cur_tab = tab_panel.cur_tab;
+          if (cur_tab != null){
+              var selection = tab_panel.tab_items[cur_tab][0].state;
+              if (selection != -1){
+                  var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
+                  var appendage = ECS.blueprints.appendages[selection_type];
+                  appendage.angle += flags["rotate"] * Math.PI / 180;
+              }
           }
        }
    }
@@ -767,13 +799,21 @@ export class BuildScene extends Scene {
 
                }
            }
+           //Text instructions
+           c.fillStyle = "magenta";
+           c.font = "30px buttonFont";
+           c.fillText("An appendage that is NOT a torso can have AT MOST 2 joints", this.mid_w - 400, this.mid_h / 2 * 3 + 30);
        } else if (screen_vars.page == 3){
-           /* Torso placement */
-           c.strokeStyle = "magenta";
-           c.fillStyle = "#32527b";
-           c.beginPath();
-           c.roundRect(this.mid_w - 200, this.mid_h - 200, 400, 400, 20);
-           c.stroke();
+
+           renderer.render(null);
+           //Draw temp titan
+           if (temp_titan_config.torso != null){
+
+                draw_appendage_gl(renderer, temp_titan_config.torso, null);
+           }
+           for (const x of temp_titan_config.appendages){
+                draw_appendage_gl(renderer, x, null);
+           }
 
            /**Draw selections**/
            var tab_panel = this.tabbed_panels[3][0];
@@ -790,12 +830,43 @@ export class BuildScene extends Scene {
                    var ratio = img_height / img_width;
                    c.drawImage(sprite, flags["mousePos"].x - 30, flags["mousePos"].y - 30, 10 * appendage.width, 10 * appendage.height);
 
-
+                   appendage.pos.x = renderer.selected_coords.x;
+                   appendage.pos.y = -renderer.selected_coords.y;
+                   //renderer.render(null);
+                   draw_appendage_gl(renderer, appendage, null);
+                   //Draw green selection box
+                   renderer.matrixStack.save();
+                   renderer.matrixStack.translate(appendage.pos.x, renderer.selected_coords.y, 0);
+                   renderer.drawRect(-1, 1, appendage.width + 2, appendage.height + 2, gl_highlight_color, 0.3, appendage.angle);
+                   renderer.matrixStack.restore();
                }
            }
+
+           /* Torso placement */
+           c.strokeStyle = "magenta";
+           c.fillStyle = "#32527b";
+           c.lineWidth = 5;
+           c.beginPath();
+           c.roundRect(this.mid_w / 2, this.mid_h / 2, this.mid_w, this.mid_h, 5);
+           c.stroke();
+
+           if (flags['left_down'] == 1){
+               renderer.drawRect(renderer.selected_coords.x, renderer.selected_coords.y, 1, 1, [1.0, 0.0, 0.0], 1.0);
+           }
+
+           //Text instructions
+           c.fillStyle = "magenta";
+           c.font = "30px buttonFont";
+           c.fillText("Hold Z or X to rotate appendages", this.mid_w - 200, this.mid_h / 2 * 3 + 30);
+
+           //Draw on webGL renderer
+           //renderer.render(null);
+           //draw_appendage_gl(renderer, appendage, null);
+
        }
 
        if (screen_vars.dropdown != null) screen_vars.dropdown.draw(c);
+
 
 
 
@@ -839,7 +910,7 @@ export class BuildScene extends Scene {
                             var unit_type = tab_panel.tab_items[cur_tab][0].options[selection];
                             temp_cell = temp_cell.substring(0, i) + keys[unit_type] + temp_cell.substring(i + 1);
                             console.log(temp_cell);
-                            tab_panel.tab_items[cur_tab][0].state = -1; //Reset current selection
+                            //tab_panel.tab_items[cur_tab][0].state = -1; //Reset current selection
                         }
                         //}
                     }
@@ -974,6 +1045,46 @@ export class BuildScene extends Scene {
                     }
                     //}
                 }
+            } else if (screen_vars.page == 3){
+                /**Draw selections**/
+                if (Math.abs(mouseX - region.x) < region.w/2 && Math.abs(mouseY - region.y) < region.h/2){
+                    var tab_panel = this.tabbed_panels[3][0];
+                    //Units
+                    //debugger;
+                    var cur_tab = tab_panel.cur_tab;
+                    if (cur_tab != null){
+                        var selection = tab_panel.tab_items[cur_tab][0].state;
+                        if (selection != -1){
+                            var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
+
+                            var appendage = ECS.blueprints.appendages[selection_type];
+
+                            appendage.pos.x = renderer.selected_coords.x;
+                            appendage.pos.y = -renderer.selected_coords.y;
+
+                            //debugger;
+                            if (temp_titan_config.torso == null){
+                                if (appendage.torso == true){
+                                    temp_titan_config.torso = copyObject(appendage);
+                                }
+                            } else {
+                                var good_to_go = checkLinks(appendage, renderer.selected_coords.x, -renderer.selected_coords.y);
+                                if (good_to_go != null){
+                                    var copy = copyObject(appendage);
+                                    temp_titan_config.appendages.push(copy);
+                                    good_to_go.ap.children.push(copy);
+                                    good_to_go.joint.linked = true;
+                                }
+
+                            }
+                            tab_panel.tab_items[cur_tab][0].state = -1; //Reset current selection
+                            appendage.pos.x = 0;
+                            appendage.pos.y = 0;
+                            appendage.angle = 0;
+                        }
+                    }
+                }
+
             }
 
        }
@@ -1043,6 +1154,36 @@ export class BuildScene extends Scene {
 
            }
 
+       } else if (screen_vars.page == 3){
+           var region = this.regions[screen_vars.page][0];
+           if (Math.abs(mouseX - region.x) < region.w/2 && Math.abs(mouseY - region.y) < region.h/2){
+               var tab_panel = this.tabbed_panels[3][0];
+               var cur_tab = tab_panel.cur_tab;
+               if (cur_tab != null){
+                   var selection = tab_panel.tab_items[cur_tab][0].state;
+                   if (selection != -1){
+                       var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
+
+                       var appendage = ECS.blueprints.appendages[selection_type];
+
+                       if (temp_titan_config.torso == null){
+                           if (appendage.torso == false){
+                               gl_highlight_color = [1.0, 0.0, 0.0];
+                           } else {
+                               gl_highlight_color = [0.0, 1.0, 0.0];
+                           }
+                       } else {
+                           console.log(appendage)
+                           var good_to_go = checkLinks(appendage, renderer.selected_coords.x, -renderer.selected_coords.y);
+                           if (good_to_go != null){
+                              gl_highlight_color = [0.0, 1.0, 0.0];
+                           } else {
+                              gl_highlight_color = [1.0, 0.0, 0.0];
+                           }
+                       }
+                   }
+               }
+           }
        }
    }
    load(){
@@ -1140,4 +1281,35 @@ function checkOverlaps(ap, obj, x, y){
 
     }
     return false;
+}
+
+//Check for linkage possibilities of a new appendage against existing temp_titan_config
+function checkLinks(ap, x, y){
+    if (temp_titan_config.torso == null) return null;
+
+
+    for (const joint of ap.joints){
+        //debugger;
+        //First check against torso
+        var orig_joint_pos = {x: x + joint.pos.x * Math.cos(ap.angle) - (joint.pos.y + 1) * Math.sin(ap.angle), y: y + joint.pos.x * Math.sin(ap.angle) + (joint.pos.y + 1) * Math.cos(ap.angle)};
+        for (const j of temp_titan_config.torso.joints){
+            if (j.linked == false){
+                var joint_pos = {x: temp_titan_config.torso.pos.x + j.pos.x * Math.cos(temp_titan_config.torso.angle) - (j.pos.y + 1) * Math.sin(temp_titan_config.torso.angle), y: temp_titan_config.torso.pos.y + j.pos.x * Math.sin(temp_titan_config.torso.angle) + (j.pos.y + 1) * Math.cos(temp_titan_config.torso.angle)};
+                var dist = l2_dist_squared(orig_joint_pos, joint_pos);
+                if (dist <=1) return {ap: temp_titan_config.torso, joint: j};
+            }
+        }
+
+        for (const a of temp_titan_config.appendages){
+            for (const j of a.joints){
+                if (j.linked == false){
+                    var joint_pos = {x: a.pos.x + j.pos.x * Math.cos(a.angle) - (j.pos.y + 1) * Math.sin(a.angle), y: a.pos.y + j.pos.x * Math.sin(a.angle) + (j.pos.y + 1) * Math.cos(a.angle)};
+
+                    var dist = l2_dist_squared(orig_joint_pos, joint_pos);
+                    if (dist <=1) return {ap: a, joint: j};
+                }
+            }
+        }
+    }
+    return null;
 }

@@ -569,32 +569,37 @@ function draw_appendage(ap, game, ctx){
 
 export function draw_appendage_gl(renderer, ap, game){
 
+
+    //Shift matrix stack's top transformation to the position of appendage
+    renderer.matrixStack.save();
+    renderer.matrixStack.translate(ap.pos.x, -ap.pos.y, 0);
+
     //First draw appendage base tiles
     for (var i = 0; i < ap.height; i++){
         for (var j = 0; j < ap.width; j++){
-            renderer.drawRect(j, -i, 1, 1, [0.0, 0.0, 0.0], 1.0);
-            renderer.drawSprite("appendage_tile", j + 0.05, -(i+0.05), 0.90, 0.90);
+            renderer.drawRect(j, -(i), 1, 1, [0.0, 0.0, 0.0], 1.0, ap.angle);
+            renderer.drawSprite("appendage_tile", j + 0.05, -(i + 0.05), 0.90, 0.90, ap.angle);
         }
     }
     //Batteries (under everything)
     for (const b of ap.batteries){
         var color = resource_colours[b.type];
-        renderer.drawRect(b.pos.x, -b.pos.y, 1, 1, [1.0, 1.0, 1.0], 0.4);
+        renderer.drawRect(b.pos.x, -b.pos.y, 1, 1, [1.0, 1.0, 1.0], 0.4, ap.angle);
     }
 
     //Modules
     for (const mod of ap.modules){
         //var img = images[mod.name];
-        renderer.drawSprite(mod.name, mod.pos.x, -mod.pos.y, mod.width, mod.height);
+        renderer.drawSprite(mod.name, mod.pos.x, -mod.pos.y, mod.width, mod.height, ap.angle);
     }
 
     //Connectors
     for (const c of ap.connectors){
         //output edge
-        renderer.drawRect(c.output_edge[0].x, -c.output_edge[0].y, c.output_edge[1].x - c.output_edge[0].x + 1, c.output_edge[1].y - c.output_edge[0].y + 1, [0.0, 1.0, 1.0], 0.6);
+        renderer.drawRect(c.output_edge[0].x, -c.output_edge[0].y, c.output_edge[1].x - c.output_edge[0].x + 1, c.output_edge[1].y - c.output_edge[0].y + 1, [0.0, 1.0, 1.0], 0.6, ap.angle);
 
         //input edge
-        renderer.drawRect(c.input_edge[0].x, -c.input_edge[0].y, c.input_edge[1].x - c.input_edge[0].x + 1, c.input_edge[1].y - c.input_edge[0].y + 1, [1.0, 0.0, 1.0], 0.6);
+        renderer.drawRect(c.input_edge[0].x, -c.input_edge[0].y, c.input_edge[1].x - c.input_edge[0].x + 1, c.input_edge[1].y - c.input_edge[0].y + 1, [1.0, 0.0, 1.0], 0.6, ap.angle);
 
         //Bezier curves as wires
         // ctx.strokeStyle = "rgb(255, 255, 255)";
@@ -614,7 +619,7 @@ export function draw_appendage_gl(renderer, ap, game){
 
     //Weapons
     for (const w of ap.weapons){
-        renderer.drawSprite(w.type, w.pos.x, -w.pos.y, w.width, w.height);
+        renderer.drawSprite(w.type, w.pos.x, -w.pos.y, w.width, w.height, ap.angle);
         // var img = images[w.type];
         // var angle = Math.PI / 2 * w.orientation;
         // ctx.translate(w.pos.x * game.grid_width, w.pos.y * game.grid_width);
@@ -626,23 +631,25 @@ export function draw_appendage_gl(renderer, ap, game){
 
     //Sinks (1 x 1)
     for (const s of ap.sinks){
-        renderer.drawSprite("reactor", s.pos.x, -s.pos.y, s.width, s.height);
+        renderer.drawSprite("reactor", s.pos.x, -s.pos.y, s.width, s.height, ap.angle);
     }
 
     //joints
     for (const j of ap.joints){
-        renderer.drawSprite("joint-hinge", j.pos.x, -j.pos.y, j.width, j.height);
+        renderer.drawSprite("joint-hinge", j.pos.x, -j.pos.y, j.width, j.height, ap.angle);
     }
 
     //Quanta
-    for (const q of game.quanta){
+    for (const q of ap.quanta){
         if (!q.type.includes("energy") && !q.type.includes("projectile")){
-            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), [0.0, 0.0, 1.0], 1.0);
+            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), [0.0, 0.0, 1.0], 1.0, ap.angle);
             //blurCircle(ctx, q.pos.x * game.grid_width, q.pos.y * game.grid_width, game.grid_width / 16 * Math.sqrt(q.amount), q.type);
 
         } else if (q.type.includes("energy")){
-            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), [0.0, 0.0, 1.0], 1.0);
+            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), [0.0, 0.0, 1.0], 1.0, ap.angle);
             //blurCircle(ctx, q.pos.x * game.grid_width, q.pos.y * game.grid_width, game.grid_width / 16 * Math.sqrt(q.amount), q.type, true);
         }
     }
+
+    renderer.matrixStack.restore();
 }

@@ -2,12 +2,13 @@ import {plain_vs, plain_fs} from "../../shaders/texture.js";
 import {simple_vs, simple_fs} from "../../shaders/simple.js";
 import {plane_vert, plane_ind, plane_col, plane_norm, plane_texcoord} from "./constants.js";
 import {loadTexture, genTexture} from "./texture_utils.js";
+import {translate, rotateX, rotateY, rotateZ, scale, invert, transpose, multiply, mmv} from "./ops.js";
+import {MatrixStack} from "./matrixstack.js";
 
 //Utility functions
 function degToRad(d) {
     return d * Math.PI / 180;
 }
-
 
 /*==================== PROJECTION MATRIX ====================== */
 function get_projection(angle, a, zMin, zMax) {
@@ -29,7 +30,7 @@ export class GL_Renderer {
             console.log("failed to load WebGL");
         }
 
-
+        this.matrixStack = new MatrixStack();
         this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true); //Flip y coordinate
 
         this.textures = {};
@@ -40,8 +41,6 @@ export class GL_Renderer {
         this.initShader("simple", simple_vs, simple_fs); //Shaders
         this.cur_shader = null;
         //this.setupUniforms();
-
-
 
         this.camera = {
           matrix:[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1],
@@ -162,7 +161,7 @@ export class GL_Renderer {
         this.selected_coords.x = e[0] * this.camera.pz + this.camera.px;
         this.selected_coords.y = e[1] * this.camera.pz + this.camera.py;
         // var result = {x:e[0] * this.camera.pz + this.camera.px, y:e[1] * this.camera.pz + this.camera.py};
-        // console.log(result);
+        //console.log(this.selected_coords);
     }
 
     updateCamera(dt){
@@ -181,9 +180,9 @@ export class GL_Renderer {
 
 
         translate(this.camera.matrix, [this.camera.px, this.camera.py, this.camera.pz]);
-        rotateX(this.camera.matrix, degToRad(this.camera.elev));
-        rotateZ(this.camera.matrix, degToRad(this.camera.roll));
-        rotateY(this.camera.matrix, degToRad(this.camera.ang));
+        // rotateX(this.camera.matrix, degToRad(this.camera.elev));
+        // rotateZ(this.camera.matrix, degToRad(this.camera.roll));
+        // rotateY(this.camera.matrix, degToRad(this.camera.ang));
         invert(this.view_matrix, this.camera.matrix); //View matrix is the inverse of camera matrix
 
         if (flags["wheel"] != 0){
@@ -215,11 +214,9 @@ export class GL_Renderer {
         //this.gl.depthFunc(this.gl.LEQUAL);
         //this.gl.depthRange(0.0, 1.0);
 
-        this.gl.clearColor(0.5, 0.5, 0.5, 0.0);
-        this.gl.clearDepth(1.0);
-
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.viewport(0.0, 0.0, this.canv.width, this.canv.height);
+        this.gl.clearColor(0.3, 0.3, 0.3, 1.0);
+        this.gl.clearDepth(1.0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
         // Select correct shader
@@ -228,7 +225,8 @@ export class GL_Renderer {
         // this.drawRect(1, -1, 2, 2, [0.0, 1.0, 0.3], 0.5);
     }
 
-    drawSprite(img_name, x, y, w, h){
+    drawSprite(img_name, x, y, w, h, angle=0){
+        //this.refreshScene();
         this.gl.useProgram(this.shaders["plain"]); //Use the plain shader (for textures)
         this.cur_shader = this.shaders["plain"];
         //Attributes
@@ -273,12 +271,24 @@ export class GL_Renderer {
         this.gl.uniform1f(_intensity, 1.0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.textures[img_name]);
         this.mo_matrix = [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
+
+        //this.matrixStack.save();
+        //this.matrixStack.translate(x, y, 0);
+        //this.matrixStack.rotateZ(angle);
+
+
+
+
         scale(this.mo_matrix, [w, h, 1]);
         translate(this.mo_matrix, [x, y, 0]);
+        rotateZ(this.mo_matrix, angle);
+        multiply(this.mo_matrix, this.matrixStack.getCurrentMatrix(), this.mo_matrix);
         this.draw(plane_vert, plane_ind, plane_norm);
+        //this.matrixStack.restore();
     }
 
-    drawRect(x, y, w, h, colour, alpha){
+    drawRect(x, y, w, h, colour, alpha, angle=0){
+        //this.refreshScene();
         this.gl.useProgram(this.shaders["simple"]); //Use the simple shader (for simple shapes)
         this.cur_shader = this.shaders["simple"];
         //Attributes
@@ -308,9 +318,22 @@ export class GL_Renderer {
         this.gl.uniform3fv(_viewPos, [this.camera.px, this.camera.py, this.camera.pz]);
         this.gl.uniform1f(_alpha, alpha);
         this.mo_matrix = [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
+
+        //Multiply with top of the matrixstack
+        //this.matrixStack.save();
+        //this.matrixStack.translate(x, y, 0);
+        //this.matrixStack.rotateZ(angle);
+
+
+
+
         scale(this.mo_matrix, [w, h, 1]);
         translate(this.mo_matrix, [x, y, 0]);
+        rotateZ(this.mo_matrix, angle);
+        multiply(this.mo_matrix, this.matrixStack.getCurrentMatrix(), this.mo_matrix);
         this.draw(plane_vert, plane_ind, plane_norm, colour);
+
+        //this.matrixStack.restore();
     }
     drawCircle(){
 
@@ -352,30 +375,7 @@ export class GL_Renderer {
 }
 
 
-//Matrix operations
-function translate(t,n){for(var a=0;a<3;a++)t[a]=t[a]+n[a]*t[3],t[4+a]=t[4+a]+n[a]*t[7],t[8+a]=t[8+a]+n[a]*t[11],t[12+a]=t[12+a]+n[a]*t[15]}
 
-function scale(t,n){t[0]*=n[0],t[5]*=n[1],t[10]*=n[2]}
-
-function rotateX(t,n){var a=Math.cos(n),r=Math.sin(n),o=t[1],e=t[5],i=t[9];t[1]=t[1]*a-t[2]*r,t[5]=t[5]*a-t[6]*r,t[9]=t[9]*a-t[10]*r,t[2]=t[2]*a+o*r,t[6]=t[6]*a+e*r,t[10]=t[10]*a+i*r}
-
-function rotateY(t,n){var a=Math.cos(n),r=Math.sin(n),o=t[0],e=t[4],i=t[8];t[0]=a*t[0]+r*t[2],t[4]=a*t[4]+r*t[6],t[8]=a*t[8]+r*t[10],t[2]=a*t[2]-r*o,t[6]=a*t[6]-r*e,t[10]=a*t[10]-r*i}
-
-function rotateZ(t,n){var a=Math.cos(n),r=Math.sin(n),o=t[0],e=t[4],i=t[8];t[0]=a*t[0]+r*t[1],t[4]=a*t[4]+r*t[5],t[8]=a*t[8]+r*t[9],t[1]=a*t[1]-r*o,t[5]=a*t[5]-r*e,t[9]=a*t[9]-r*i}
-
-function invert(t,n){let a=n[0],r=n[1],o=n[2],e=n[3],i=n[4],u=n[5],c=n[6],s=n[7],f=n[8],l=n[9],h=n[10],M=n[11],v=n[12],p=n[13],m=n[14],y=n[15],X=a*u-r*i,Y=a*c-o*i,Z=a*s-e*i,b=r*c-o*u,d=r*s-e*u,g=o*s-e*c,j=f*p-l*v,k=f*m-h*v,q=f*y-M*v,w=l*m-h*p,x=l*y-M*p,z=h*y-M*m,A=X*z-Y*x+Z*w+b*q-d*k+g*j;return A?(A=1/A,t[0]=(u*z-c*x+s*w)*A,t[1]=(o*x-r*z-e*w)*A,t[2]=(p*g-m*d+y*b)*A,t[3]=(h*d-l*g-M*b)*A,t[4]=(c*q-i*z-s*k)*A,t[5]=(a*z-o*q+e*k)*A,t[6]=(m*Z-v*g-y*Y)*A,t[7]=(f*g-h*Z+M*Y)*A,t[8]=(i*x-u*q+s*j)*A,t[9]=(r*q-a*x-e*j)*A,t[10]=(v*d-p*Z+y*X)*A,t[11]=(l*Z-f*d-M*X)*A,t[12]=(u*k-i*w-c*j)*A,t[13]=(a*w-r*k+o*j)*A,t[14]=(p*Y-v*b-m*X)*A,t[15]=(f*b-l*Y+h*X)*A,t):null}
-
-function transpose(t,n){if(t===n){let a=n[1],r=n[2],o=n[3],e=n[6],i=n[7],u=n[11];t[1]=n[4],t[2]=n[8],t[3]=n[12],t[4]=a,t[6]=n[9],t[7]=n[13],t[8]=r,t[9]=e,t[11]=n[14],t[12]=o,t[13]=i,t[14]=u}else t[0]=n[0],t[1]=n[4],t[2]=n[8],t[3]=n[12],t[4]=n[1],t[5]=n[5],t[6]=n[9],t[7]=n[13],t[8]=n[2],t[9]=n[6],t[10]=n[10],t[11]=n[14],t[12]=n[3],t[13]=n[7],t[14]=n[11],t[15]=n[15];return t}
-
-function multiply(t,n,a){let r=n[0],o=n[1],e=n[2],i=n[3],u=n[4],c=n[5],s=n[6],f=n[7],l=n[8],h=n[9],M=n[10],v=n[11],p=n[12],m=n[13],y=n[14],X=n[15],Y=a[0],Z=a[1],b=a[2],d=a[3];return t[0]=Y*r+Z*u+b*l+d*p,t[1]=Y*o+Z*c+b*h+d*m,t[2]=Y*e+Z*s+b*M+d*y,t[3]=Y*i+Z*f+b*v+d*X,Y=a[4],Z=a[5],b=a[6],d=a[7],t[4]=Y*r+Z*u+b*l+d*p,t[5]=Y*o+Z*c+b*h+d*m,t[6]=Y*e+Z*s+b*M+d*y,t[7]=Y*i+Z*f+b*v+d*X,Y=a[8],Z=a[9],b=a[10],d=a[11],t[8]=Y*r+Z*u+b*l+d*p,t[9]=Y*o+Z*c+b*h+d*m,t[10]=Y*e+Z*s+b*M+d*y,t[11]=Y*i+Z*f+b*v+d*X,Y=a[12],Z=a[13],b=a[14],d=a[15],t[12]=Y*r+Z*u+b*l+d*p,t[13]=Y*o+Z*c+b*h+d*m,t[14]=Y*e+Z*s+b*M+d*y,t[15]=Y*i+Z*f+b*v+d*X,t}
-
-//Matrix multiplied by vector
-function mmv(e, M, v){
-    e[0] = M[0] * v[0] + M[4] * v[1] + M[8] * v[2] + M[12] * v[3];
-    e[1] = M[1] * v[0] + M[5] * v[1] + M[9] * v[2] + M[13] * v[3];
-    e[2] = M[2] * v[0] + M[6] * v[1] + M[10] * v[2] + M[14] * v[3];
-    e[3] = M[3] * v[0] + M[7] * v[1] + M[11] * v[2] + M[15] * v[3];
-}
 // var gl_canvas = document.getElementById('gl');
 // gl = gl_canvas.getContext('webgl2');
 //

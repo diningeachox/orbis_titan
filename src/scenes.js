@@ -168,19 +168,19 @@ export class GameScene extends Scene {
             }
            });
 
-      var build_button = new Button({x: canvas.width / 2 + 100, y:canvas.height - 100, width:150, height:50, label:"Build",
+      var build_button = new Button({x: canvas.width / 2 - 50, y:canvas.height - 100, width:300, height:100, label:"Build",
             onClick: function(){
                 changeScene(Game.build_scene);
                 playSound(sfx_sources["button_click"].src, sfx_ctx);
             }
            });
-       var battle_button = new Button({x: canvas.width / 2 + 300, y:canvas.height - 100, width:150, height:50, label:"Battle",
+       var battle_button = new Button({x: canvas.width / 2 + 300, y:canvas.height - 100, width:300, height:100, label:"Battle",
              onClick: function(){
                  changeScene(Game.build_scene);
                  playSound(sfx_sources["button_click"].src, sfx_ctx);
              }
             });
-      this.buttons = [menu_button, schedule_button, market_button, build_button, battle_button];
+      this.buttons = [menu_button, build_button, battle_button];
     }
     update(delta) {
         this.game.update(delta);
