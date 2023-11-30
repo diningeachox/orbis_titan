@@ -176,7 +176,7 @@ export class GameScene extends Scene {
            });
        var battle_button = new Button({x: canvas.width / 2 + 300, y:canvas.height - 100, width:300, height:100, label:"Battle",
              onClick: function(){
-                 changeScene(Game.build_scene);
+                 changeScene(Game.battle_scene);
                  playSound(sfx_sources["button_click"].src, sfx_ctx);
              }
             });
@@ -190,14 +190,16 @@ export class GameScene extends Scene {
         c.clearRect(0, 0, canvas.width, canvas.height);
         this.game.render(delta);
         //Buttons
-        for (var i = 0; i < this.buttons.length; i++){
-            this.buttons[i].draw(c);
+        if (!this.game.battle){
+            for (var i = 0; i < this.buttons.length; i++){
+                this.buttons[i].draw(c);
+            }
         }
     }
     load(){
         super.load();
         overlay.style.zIndex = 4;
-        gl.style.zIndex = 8;
+        //gl.style.zIndex = 8;
     }
     unload(){
         //this.game = null;
@@ -225,7 +227,7 @@ export class Ins extends Scene {
                playSound(sfx_sources["button_click"].src, sfx_ctx);
            }
           });
-      this.buttons = [menu_button, play_button];
+      this.buttons = [menu_button];
     }
     update(delta) {
       frame++;

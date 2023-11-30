@@ -802,7 +802,7 @@ export class BuildScene extends Scene {
            //Text instructions
            c.fillStyle = "magenta";
            c.font = "30px buttonFont";
-           c.fillText("An appendage that is NOT a torso can have AT MOST 2 joints", this.mid_w - 400, this.mid_h / 2 * 3 + 30);
+           c.fillText("An appendage that is NOT a torso can have AT MOST 2 joints", this.mid_w - 400, this.mid_h - 180);
        } else if (screen_vars.page == 3){
 
            renderer.render(null);
@@ -1082,6 +1082,8 @@ export class BuildScene extends Scene {
                                     if (good_to_go.ap.torso == true) temp_titan_config.appendages.push(copy.id);
                                     good_to_go.ap.children.push(copy.id);
                                     good_to_go.joint.linked = true;
+
+                                    good_to_go.orig_joint.child = true;
                                 }
 
                             }
@@ -1303,7 +1305,7 @@ function checkLinks(ap, x, y){
             if (j.linked == false){
                 var joint_pos = {x: temp_titan_config.torso.pos.x + j.pos.x * Math.cos(temp_titan_config.torso.angle) - (j.pos.y + 1) * Math.sin(temp_titan_config.torso.angle), y: temp_titan_config.torso.pos.y + j.pos.x * Math.sin(temp_titan_config.torso.angle) + (j.pos.y + 1) * Math.cos(temp_titan_config.torso.angle)};
                 var dist = l2_dist_squared(orig_joint_pos, joint_pos);
-                if (dist <=1) return {ap: temp_titan_config.torso, joint: j};
+                if (dist <=1) return {ap: temp_titan_config.torso, joint: j, orig_joint: joint};
             }
         }
 
@@ -1314,7 +1316,7 @@ function checkLinks(ap, x, y){
                     var joint_pos = {x: a.pos.x + j.pos.x * Math.cos(a.angle) - (j.pos.y + 1) * Math.sin(a.angle), y: a.pos.y + j.pos.x * Math.sin(a.angle) + (j.pos.y + 1) * Math.cos(a.angle)};
 
                     var dist = l2_dist_squared(orig_joint_pos, joint_pos);
-                    if (dist <=1) return {ap: a, joint: j};
+                    if (dist <=1) return {ap: a, joint: j, orig_joint: joint};
                 }
             }
             //Go down the chain
@@ -1325,7 +1327,7 @@ function checkLinks(ap, x, y){
                         var joint_pos = {x: a.pos.x + j.pos.x * Math.cos(a.angle) - (j.pos.y + 1) * Math.sin(a.angle), y: a.pos.y + j.pos.x * Math.sin(a.angle) + (j.pos.y + 1) * Math.cos(a.angle)};
 
                         var dist = l2_dist_squared(orig_joint_pos, joint_pos);
-                        if (dist <=1) return {ap: a, joint: j};
+                        if (dist <=1) return {ap: a, joint: j, orig_joint: joint};
                     }
                 }
             }

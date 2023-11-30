@@ -5,11 +5,12 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.135.0/build/three.m
 import {Module, Connector, Weapon, Joint, Sink, Mainframe, createModuleImage} from "./gameObjects/module.js";
 import {Cell, Router, Grid} from "./gameObjects/cell.js";
 import {Shell, Appendage, Torso, createAppendageImage} from "./gameObjects/appendage.js";
-import {Titan, draw_appendage_gl} from "./gameObjects/titan.js";
+import {Titan, draw_appendage_gl, draw_titan} from "./gameObjects/titan.js";
 import {Battery} from "./gameObjects/battery.js";
 
 import {Vector2D} from "./vector2D.js";
 import {BuildScene} from "./subscenes/build_scene.js";
+import {BattleScene} from "./subscenes/battle_scene.js";
 import {MarketScene} from "./subscenes/market_scene.js";
 import {copyObject} from "./utils.js";
 
@@ -42,6 +43,7 @@ export var menu;
 
 //SUbscenes
 export var build_scene;
+export var battle_scene;
 export var market_scene;
 
 export function resize() {
@@ -67,28 +69,6 @@ export function init(){
     Assets.gl.style.left = (window.innerWidth / 4) + "px";
     Assets.gl.style.top = (window.innerHeight / 4) + "px";
 
-    Assets.uniforms.u_resolution.value.x = Assets.gl.width;
-    Assets.uniforms.u_resolution.value.y = Assets.gl.height;
-
-    //Reconfigure camera
-    Assets.ortho_camera.left = Assets.viewPortWidth / - 2;
-    Assets.ortho_camera.right = Assets.viewPortWidth / 2;
-    var h = gl.height / gl.width * Assets.viewPortWidth;
-    Assets.ortho_camera.top = h / 2;
-    Assets.ortho_camera.bottom = h / -2;
-    Assets.ortho_camera.updateProjectionMatrix();
-    Assets.renderer.setSize( gl.width, gl.height );
-
-
-    Assets.sprite.scale.set(1, gl.height / gl.width, 1); //Don't scale the z-component because we are 2D
-
-    //Resize sprite object
-    var vFOV = THREE.MathUtils.degToRad( Assets.ortho_camera.fov ); // convert vertical fov to radians
-
-    var height = 2 * Math.tan( vFOV / 2 ) * 10; // visible height
-
-    var width = height * Assets.ortho_camera.aspect;           // visible width
-    //Assets.sprite.scale.set(width, height, 1);
 
     //Draw/Load images of gameobjects
 
@@ -112,6 +92,7 @@ export function init(){
     ins_scene = new Scene.Ins();
 
     build_scene = new BuildScene();
+    battle_scene = new BattleScene();
     market_scene = new MarketScene();
 
 
@@ -348,7 +329,7 @@ class Game {
                                       "modules": [testm, testm2], "weapons": test_weapons,
                                       "batteries": this.batteries, "connectors": test_connectors,
                                       "joints": [test_joint, Joint(-1, 2), Joint(20, 17), Joint(-1, 17)], "sinks": test_sinks,
-                                      "children": [], "pos": {x:-10, y: -10}};
+                                      "children": children, "pos": {x:0, y: 0}};
 
         var test_torso = Torso(test_torso_config);
         this.test_torso = test_torso;
@@ -370,11 +351,11 @@ class Game {
 
 
 
-        var test_titan_config = {"pos": new Vector2D(50, 60), "appendages": [test_appendage, test_appendage_2], "torso": test_torso};
+        var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": test_torso};
         var test_titan = new Titan(test_titan_config);
 
         this.current_titan = test_titan;
-
+        console.log(test_titan)
         //Energy quanta
         this.quanta = [];
         this.sources = [
@@ -393,45 +374,60 @@ class Game {
         // sprites[0].material.rotation = this.score / 10.0;
         // sprites[1].position.set(this.score, -this.score, 0);
         //ECS.systems.updateEntities(this, delta);
-        if (flags['left_down'] == 1) {
-            //Set new destination for titan
-            if (this.current_titan != null){
-                var dest = new Vector2D(flags["mousePos"].x / this.grid_width, flags["mousePos"].y / this.grid_width);
-                var dir = dest.subtract(this.current_titan.pos);
 
-                //debugger;
-                this.current_titan.destination = dest;
-                this.current_titan.setNewTargets(dir, 5);
-            }
-        }
 
         if (this.battle){
+
+            renderer.updateCamera(delta);
+            const bcr = Assets.gl.getBoundingClientRect();
+            renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
+            if (flags['left_down'] == 1) {
+                //Set new destination for titan
+                if (this.current_titan != null){
+                    var dest = new Vector2D(renderer.selected_coords.x, -renderer.selected_coords.y);
+                    var dir = dest.subtract(this.current_titan.pos);
+
+                    //debugger;
+                    this.current_titan.destination = dest;
+                    this.current_titan.setNewTargets(dir, 5);
+                }
+            }
             this.current_titan.update(delta);
             ECS.systems.update(this, delta);
         }
 
         //GL renderer updates
 
-        renderer.updateCamera(delta);
-        const bcr = Assets.gl.getBoundingClientRect();
-        renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
+
         this.frame++;
     }
     render(delta){
-
-
         //ECS.systems.render(this, delta);
-        Assets.c.drawImage(images["menu"], (Assets.canvas.width) / 6 + Math.sin(this.frame / 160) * 100, 0, (Assets.canvas.width) * 2 / 3, Assets.canvas.height);
-        var r = 1 / 5;
-        var gradient = c.createLinearGradient(0, 0, canvas.width, 0);
-        // Add three color stops
-        gradient.addColorStop(0, "rgba(0, 0, 0, 1.0)");
-        gradient.addColorStop(r, "rgba(0, 0, 0, 1.0)");
-        gradient.addColorStop(0.5, "rgba(0, 0, 0, "+ (Math.sin(this.frame / 40) * 0.1 + 0.1) +")");
-        gradient.addColorStop(1 - r, "rgba(0, 0, 0, 1.0)");
-        gradient.addColorStop(1, "rgba(0, 0, 0, 1.0)");
-        c.fillStyle = gradient;
-        c.fillRect(0, 0, canvas.width, canvas.height);
+        if (!this.battle){
+            Assets.c.drawImage(images["menu"], (Assets.canvas.width) / 6 + Math.sin(this.frame / 160) * 100, 0, (Assets.canvas.width) * 2 / 3, Assets.canvas.height);
+            var r = 1 / 5;
+            var gradient = c.createLinearGradient(0, 0, canvas.width, 0);
+            // Add three color stops
+            gradient.addColorStop(0, "rgba(0, 0, 0, 1.0)");
+            gradient.addColorStop(r, "rgba(0, 0, 0, 1.0)");
+            gradient.addColorStop(0.5, "rgba(0, 0, 0, "+ (Math.sin(this.frame / 40) * 0.1 + 0.1) +")");
+            gradient.addColorStop(1 - r, "rgba(0, 0, 0, 1.0)");
+            gradient.addColorStop(1, "rgba(0, 0, 0, 1.0)");
+            c.fillStyle = gradient;
+            c.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+            renderer.render(this);
+            //debugger;
+            if (game.current_titan != null){
+                draw_titan(renderer, game.current_titan.torso, game.current_titan.pos, game);
+            }
+            if (flags['left_down'] == 1){
+
+                const bcr = Assets.gl.getBoundingClientRect();
+                renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
+                renderer.drawRect(renderer.selected_coords.x, renderer.selected_coords.y, 1, 1, [1.0, 0.0, 0.0], 1.0)
+            }
+        }
 
         //renderer.render(this);
         //draw_appendage_gl(renderer, this.test_torso, this);
@@ -452,22 +448,7 @@ class Game {
         // newContext.drawImage(Assets.canvas, 0, 0, Assets.canvas.width, Assets.canvas.height);
         //
         //
-        // const canvasData = newContext.getImageData(0, 0, newCanvas.width, newCanvas.height);
-        // const texture = new THREE.DataTexture( canvasData, newCanvas.width, newCanvas.height);
-        // //var texture = new THREE.CanvasTexture(Assets.canvas);
-        // texture.needsUpdate = true;
-        // //texture.magFilter = THREE.NearestFilter;
-        // //texture.minFilter = THREE.NearestFilter;
-        // //
-        // //Assets.plane_material.map = texture;
-        // //
-        // // //Assets.uniforms.tex.value = texture;
-        // // //
-        // Assets.sprite_material.map = texture;
-        // Assets.c.clearRect(0, 0, Assets.canvas.width, Assets.canvas.height);
-        // Assets.camera.updateMatrixWorld();
-        // Assets.controls.update();
-        // Assets.renderer.render( Assets.scene, Assets.ortho_camera );
+
     }
 }
 

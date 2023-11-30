@@ -81,6 +81,17 @@ export var r2h = function(rgb) {
     return "#" + ((1 << 24) + (rgb[0] << 16) + (rgb[1] << 8) + rgb[2]).toString(16).slice(1);
 };
 
+export var rgba2dec = function(rgba){
+    var dec = rgba.replace(/[^\d,.]/g, '').split(',');
+    for (var i = 0; i < dec.length; i++){
+        if (i < dec.length - 1) {
+            dec[i] = parseInt(dec[i]) / 255;
+        } else {
+            dec[i] = parseFloat(dec[i]);
+        }
+    }
+    return dec;
+}
 //Clip value of x in the interval [a, b] inclusive
 export function clip(x, a, b){
     return Math.max(Math.min(x, b), a);

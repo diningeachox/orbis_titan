@@ -106,3 +106,22 @@ export const resource_colours = {
   "energy3": "rgba(103,10,10,1)",
   "energy4": "rgba(0,255,255,1)",
 };
+
+export const gl_resource_colours = {
+  "photum": "rgba(245,245,220,1)",
+  "aquam": "rgba(137,207,240,1)",
+  "gravitum": "rgba(62,49,23,1)",
+
+  //Second order
+  "electrum": "rgba(255,255,0,1)",
+  "pyrum": "rgba(199,0,0,1)",
+  "rapidum": "rgba(255,0,255,1)",
+  "fortinium": "rgba(103,10,10,1)",
+  "vitalium": "rgba(0,255,255,1)",
+
+  //Third order
+  "energy1": "rgba(255,255,0,1)",
+  "energy2": "rgba(255,0,255,1)",
+  "energy3": "rgba(103,10,10,1)",
+  "energy4": "rgba(0,255,255,1)",
+};

@@ -38,6 +38,7 @@ export function updateAppendage(game, ap, delta){
         var q = game.quanta[j];
         var vel = new Vector2D(0, 0);
         var in_module = false;
+        var in_util = false;
         var deleted = false;
         for (const m of ap.modules){
             if (q.pos.x >= m.pos.x && q.pos.x <= m.pos.x + m.width && q.pos.y >= m.pos.y && q.pos.y <= m.pos.y + m.height){
@@ -116,7 +117,7 @@ export function updateAppendage(game, ap, delta){
                 if (approx(rel_x - ~~(rel_x), 0.5) && approx(rel_y - ~~(rel_y), 0.5)){
                     s.storage[q.type] += q.amount;
                 }
-                in_module = true;
+                in_util = true;
             }
         }
 
@@ -129,11 +130,21 @@ export function updateAppendage(game, ap, delta){
                 if (approx(rel_x - ~~(rel_x), 0.5) && approx(rel_y - ~~(rel_y), 0.5)){
                     if (w.ammo.hasOwnProperty(q.type)) w.ammo[q.type] += q.amount;
                 }
-                in_module = true;
+                in_util = true;
             }
         }
 
         if (deleted) continue;
+        if (in_util){
+            //Either gets absorbed or disappears
+            var rel_x = q.pos.x;
+            var rel_y = q.pos.y;
+            if (approx(rel_x - ~~(rel_x), 0.5) && approx(rel_y - ~~(rel_y), 0.5)){
+                game.quanta.splice(j, 1);
+                continue;
+            }
+
+        }
         if (in_module == false && l1_dist(q.pos, q.origin) > 1){
             //Check if inside connector
             for (const c of ap.connectors){

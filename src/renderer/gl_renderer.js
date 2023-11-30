@@ -31,7 +31,7 @@ export class GL_Renderer {
         }
 
         this.matrixStack = new MatrixStack();
-        this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true); //Flip y coordinate
+        //this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true); //Flip y coordinate
 
         this.textures = {};
         this.shaders = {};
@@ -64,6 +64,10 @@ export class GL_Renderer {
 
         this.selected_coords = {x:0, y:0};
 
+    }
+
+    resize(){
+        this.proj_matrix = get_projection(40, this.canv.width/this.canv.height, this.camera.near, this.camera.far);
     }
 
     loadTextures(images){
@@ -225,7 +229,7 @@ export class GL_Renderer {
         // this.drawRect(1, -1, 2, 2, [0.0, 1.0, 0.3], 0.5);
     }
 
-    drawSprite(img_name, x, y, w, h, angle=0){
+    drawSprite(img_name, x, y, w, h, angle=0, depth=0.05){
         //this.refreshScene();
         this.gl.useProgram(this.shaders["plain"]); //Use the plain shader (for textures)
         this.cur_shader = this.shaders["plain"];
@@ -272,22 +276,15 @@ export class GL_Renderer {
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.textures[img_name]);
         this.mo_matrix = [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
 
-        //this.matrixStack.save();
-        //this.matrixStack.translate(x, y, 0);
-        //this.matrixStack.rotateZ(angle);
-
-
-
-
         scale(this.mo_matrix, [w, h, 1]);
-        translate(this.mo_matrix, [x, y, 0]);
+        translate(this.mo_matrix, [x, y, depth]);
         rotateZ(this.mo_matrix, angle);
         multiply(this.mo_matrix, this.matrixStack.getCurrentMatrix(), this.mo_matrix);
         this.draw(plane_vert, plane_ind, plane_norm);
         //this.matrixStack.restore();
     }
 
-    drawRect(x, y, w, h, colour, alpha, angle=0){
+    drawRect(x, y, w, h, colour, alpha, angle=0, depth=0){
         //this.refreshScene();
         this.gl.useProgram(this.shaders["simple"]); //Use the simple shader (for simple shapes)
         this.cur_shader = this.shaders["simple"];
@@ -328,7 +325,7 @@ export class GL_Renderer {
 
 
         scale(this.mo_matrix, [w, h, 1]);
-        translate(this.mo_matrix, [x, y, 0]);
+        translate(this.mo_matrix, [x, y, depth]);
         rotateZ(this.mo_matrix, angle);
         multiply(this.mo_matrix, this.matrixStack.getCurrentMatrix(), this.mo_matrix);
         this.draw(plane_vert, plane_ind, plane_norm, colour);

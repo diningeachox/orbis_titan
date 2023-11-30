@@ -14,40 +14,55 @@ import {Vector2D} from "../vector2D.js";
 import {updateAppendage} from "../system.js";
 import {GL_Renderer} from "../renderer/gl_renderer.js";
 
+//Variables from assets.js
+var canvas = Assets.canvas;
+var overlay = Assets.overlay;
+var c = Assets.c;
+var ol = Assets.ol;
+
+
 export class BattleScene extends Scene {
     constructor(){
       super();
       this.name = "ins";
+      this.frame = 0;
       //Buttons
-      var menu_button = new Button({x: canvas.width / 2, y:canvas.height - 100, width:150, height:50, label:"Back",
+      var back_button = new Button({x: canvas.width / 2 - 50, y:canvas.height - 100, width:300, height:100, label:"Back",
             onClick: function(){
-                changeScene(Game.menu);
+                game.battle = false;
+                changeScene(game_scene);
                 playSound(sfx_sources["button_click"].src, sfx_ctx);
             }
            });
 
-     var play_button = new Button({x: canvas.width / 2, y:200, width:150, height:50, label:"Play",
+     var battle_button = new Button({x: canvas.width / 2 + 300, y:canvas.height - 100, width:300, height:100, label:"Start Battle",
            onClick: function(){
-               changeScene(Game.game_scene);
+               game.battle = true;
+               Assets.gl.width = window.innerWidth;
+               Assets.gl.height = window.innerHeight;
+               Assets.gl.style.left = "0px";
+               Assets.gl.style.top = "0px";
+               renderer.resize();
+               changeScene(game_scene);
                playSound(sfx_sources["button_click"].src, sfx_ctx);
            }
           });
-      this.buttons = [menu_button, play_button];
+      this.buttons = [back_button, battle_button];
     }
     update(delta) {
-      frame++;
+        this.frame++;
     }
     render(delta){
         c.clearRect(0, 0, canvas.width, canvas.height);
 
-        var img = images["title"];
-        c.drawImage(img, (canvas.width - canvas.height) / 2, 0, canvas.height, canvas.height);
+        //var img = images["title"];
+        //c.drawImage(img, (canvas.width - canvas.height) / 2, 0, canvas.height, canvas.height);
         var r = (canvas.width - canvas.height) / (2 * canvas.width);
         var gradient = c.createLinearGradient(0, 0, canvas.width, 0);
         // Add three color stops
         gradient.addColorStop(0, "rgba(0, 0, 0, 1.0)");
         gradient.addColorStop(r, "rgba(0, 0, 0, 1.0)");
-        gradient.addColorStop(0.5, "rgba(0, 0, 0, "+ (Math.sin(frame / 40) * 0.1 + 0.1) +")");
+        gradient.addColorStop(0.5, "rgba(0, 0, 0, "+ (Math.sin(this.frame / 40) * 0.1 + 0.1) +")");
         gradient.addColorStop(1 - r, "rgba(0, 0, 0, 1.0)");
         gradient.addColorStop(1, "rgba(0, 0, 0, 1.0)");
         c.fillStyle = gradient;
@@ -73,7 +88,7 @@ export class BattleScene extends Scene {
         c.font="70px titleFont";
         c.fillStyle = "white";
         c.textAlign = "center";
-        c.fillText("credits", canvas.width/2, 100);
+        c.fillText("choose your mech", canvas.width/2, 100);
 
         for (var i = 0; i < this.buttons.length; i++){
             this.buttons[i].draw(c);

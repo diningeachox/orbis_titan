@@ -46,7 +46,7 @@ const Weapon = (config) => {
 }
 
 const Joint = (x, y) => {
-    return {pos: {x:x, y:y}, width: 1, height: 3, linked: false};
+    return {pos: {x:x, y:y}, width: 1, height: 3, linked: false, child: false};
 }
 
 const Sink = (x, y) => {

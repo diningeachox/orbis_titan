@@ -206,6 +206,38 @@ function loadImage(key, num){
     document.getElementsByClassName("load_text")[0].innerHTML = "Loading images";
 }
 
+function loadFonts(){
+    //fonts
+    var dialogFont = new FontFace('dialogFont', 'url(./fonts/Jost-500-Medium.otf)');
+    dialogFont.load().then(function(font){
+      // with canvas, if this is ommited won't work
+      document.fonts.add(font);
+      console.log('Dialog Font loaded');
+    });
+
+    var gameFont = new FontFace('gameFont', 'url(./fonts/BACKTO1982.TTF)');
+    gameFont.load().then(function(font){
+      // with canvas, if this is ommited won't work
+      document.fonts.add(font);
+      console.log('Game Font loaded');
+    });
+
+    var buttonFont = new FontFace('buttonFont', 'url(./fonts/RishgularTry-x30DO.ttf)');
+    buttonFont.load().then(function(font){
+      // with canvas, if this is ommited won't work
+      document.fonts.add(font);
+      console.log('Button Font loaded');
+    });
+
+    var titleFont = new FontFace('titleFont', 'url(./fonts/NamcoRegular-lgzd.ttf)');
+    titleFont.load().then(function(font){
+      // with canvas, if this is ommited won't work
+      document.fonts.add(font);
+      console.log('Title Font loaded');
+    });
+    document.getElementsByClassName("load_text")[0].innerHTML = "Loading fonts";
+}
+
 //Preloading
 var promises = [];
 //Load and convert images
@@ -214,8 +246,10 @@ for (var key of Object.keys(arr)) {
     loadedImages++;
     promises.push(loadImage(key, loadedImages));
 }
-
+promises.push(loadFonts());
 promises.push(addSound("button_click", sfx_sources, sfx_ctx, "./audio/button_click.ogg"));
+
+//Actions after loading completes
 Promise.all(promises)
   .then(function gameInit() {
 
