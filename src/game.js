@@ -17,7 +17,7 @@ import {Explosion, P1, P2} from "./projectile.js";
 
 import {GL_Renderer} from "./renderer/gl_renderer.js";
 
-import chip_data from '../../presets/chips.json' assert { type: 'json' };
+import chip_data from '../presets/chips.json' assert { type: 'json' };
 import module_data from '../presets/modules.json' assert { type: 'json' };
 import weapon_data from '../presets/weapons.json' assert { type: 'json' };
 import appendage_data from '../presets/appendages.json' assert { type: 'json' };
@@ -333,6 +333,8 @@ class Game {
             //test_appendage_2.pos = {x:Assets.canvas.width, y:Assets.canvas.height / 2};
             test_appendage.angle = -Math.PI / 4 * i;
             test_appendage_2.angle = -Math.PI / 6;
+            if (i > 1) test_appendage.angle = Math.PI - Math.PI / 4;
+            if (i > 1) test_appendage_2.angle = Math.PI / 6;
             test_appendage.children.push(test_appendage_2.id);
             console.log(test_appendage.children)
             ECS.entities.appendages[test_appendage.id] = test_appendage;
@@ -365,19 +367,7 @@ class Game {
 
         //var appendage_copy = JSON.parse(JSON.stringify(test_appendage));
 
-        this.chips = {};
-        this.mods = {};
-        this.appendages = {"test": test_appendage};
-        this.titans = {};
 
-        this.projectiles = [];
-        // this.projectiles.push(P1({x:0, y:0, dir: new Vector2D(0.1, 1), color: [1.0, 1.0, 0.0], owner:0}));
-        // this.projectiles.push(P1({x:3, y:-3, dir: new Vector2D(0.1, -1), color: [1.0, 1.0, 1.0], owner:0}));
-        // this.projectiles.push(P2({x:5, y:-1, dir: new Vector2D(-0.5, -0.1), color: [0.5, 0.5, 1.0], owner:0}));
-
-        this.explosions = [];
-        this.explosions.push(Explosion(1, -5));
-        this.explosions.push(Explosion(5, -4));
 
         var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": test_torso, "id": 0, "hp": 500};
         var test_titan = new Titan(test_titan_config);
@@ -427,6 +417,93 @@ class Game {
 
 
         this.battle = false;
+
+        this.chips = {};
+        this.mods = {};
+        this.appendages = {"test": test_appendage};
+        this.titans = {};
+
+        this.projectiles = [];
+
+        this.explosions = [];
+
+    }
+    resetTitans(){
+
+        //Create 4 legs with 2 joints each
+        var children = [];
+        for (var i = 0; i < 4; i++){
+            var test_appendage = copyObject(appendage_data["arm"]);
+            var test_appendage_2 = copyObject(test_appendage);
+            test_appendage.angle = -Math.PI / 4 * i;
+            test_appendage_2.angle = -Math.PI / 6;
+            if (i > 1) test_appendage.angle = Math.PI - Math.PI / 4;
+            if (i > 1) test_appendage_2.angle = Math.PI / 6;
+            test_appendage.children.push(test_appendage_2.id);
+            ECS.entities.appendages[test_appendage.id] = test_appendage;
+            ECS.entities.appendages[test_appendage_2.id] = test_appendage_2;
+            //Create appendage images for building
+            createAppendageImage(test_appendage, 80);
+            children.push(test_appendage.id);
+        }
+        var test_connectors = [Connector(ECS.entities.modules["testm"], "north", ECS.entities.modules["testm2"], "south")];
+        var test_sinks = [Sink(9, 4), Sink(11, 5)];
+        var test_joint = Joint(19, 2);
+        var test_weapons = [Weapon({type: "gun", pos: {x: 15, y: 5}, orientation: 0})];
+
+        //Torso
+        var test_torso_config = {"width": 20, "height": 20, "shell": [],
+                                      "modules": [ECS.entities.modules["testm"], ECS.entities.modules["testm2"]], "weapons": test_weapons,
+                                      "batteries": this.batteries, "connectors": test_connectors,
+                                      "joints": [Joint(19, 17), Joint(19, 2), Joint(0, 2), Joint(0, 17)], "sinks": test_sinks,
+                                      "children": children, "pos": {x:-0, y: -0}};
+
+        var test_torso = Torso(test_torso_config);
+        this.test_torso = test_torso;
+
+        ECS.entities.appendages[test_torso.id] = test_torso;
+        ECS.blueprints.appendages[test_torso.id] = test_torso;
+        ECS.blueprints.torsos[test_torso.id] = test_torso;
+        createAppendageImage(test_torso, 80);
+
+        var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": test_torso, "id": 0, "hp": 500};
+        var test_titan = new Titan(test_titan_config);
+        this.current_titan = test_titan;
+
+        //Make a deep copy of original titan
+        var copy_children = [];
+        for (var i = 0; i < 4; i++){
+            var copy_test_appendage = copyObject(appendage_data["arm"]);
+            var copy_test_appendage_2 = copyObject(copy_test_appendage);
+            copy_test_appendage.angle = -Math.PI / 6 * i;
+            copy_test_appendage_2.angle = Math.PI / 6;
+            if (i > 1) copy_test_appendage.angle = Math.PI;
+            copy_test_appendage.children.push(copy_test_appendage_2.id);
+            console.log(test_appendage.children)
+            ECS.entities.appendages[copy_test_appendage.id] = copy_test_appendage;
+            ECS.entities.appendages[copy_test_appendage_2.id] = copy_test_appendage_2;
+            //Create appendage images for building
+            createAppendageImage(copy_test_appendage, 80);
+            copy_children.push(copy_test_appendage.id);
+
+        }
+        var copy_torso_config = {"width": 20, "height": 20, "shell": [],
+                                      "modules": [ECS.entities.modules["testm"], ECS.entities.modules["testm2"]], "weapons": test_weapons,
+                                      "batteries": this.batteries, "connectors": test_connectors,
+                                      "joints": [Joint(19, 17), Joint(19, 2), Joint(0, 2), Joint(0, 17)], "sinks": test_sinks,
+                                      "children": copy_children, "pos": {x:-0, y: -0}};
+        var copy_torso = Torso(copy_torso_config);
+
+        var test_opp_config = {"pos": new Vector2D(90, 35), "appendages": [copy_test_appendage, copy_test_appendage_2], "torso": copyObject(copy_torso), "id": 1, "hp": 500};
+        this.test_opp = new Titan(test_opp_config);
+        //Set initial destination
+        var dest = new Vector2D(135, 40);
+        var dir = dest.subtract(this.test_opp.pos);
+        this.test_opp.destination = dest;
+        this.test_opp.setNewTargets(dir, 5);
+
+        this.projectiles = [];
+        this.explosions = [];
 
     }
     update(delta){
@@ -502,13 +579,13 @@ class Game {
 
                 //Debug mode
                 // var body = game.current_titan;
-                var body = game.test_opp;
-                for (var i = 0; i < body.targets.length; i++){
-                    renderer.drawRect(body.targets[i].x, -body.targets[i].y, 2, 2, [1.0, 1.0, 0.0], 1.0);
-                    //Old positions
-                    renderer.drawRect(body.old_foot_pos[i].x, -body.old_foot_pos[i].y, 2, 2, [0.0, 1.0, 0.0], 1.0);
-                }
-                renderer.drawRect(body.pos.x - 1, -body.pos.y + 1, 2, 2, [1.0, 0.0, 0.0], 1.0);
+                // var body = game.test_opp;
+                // for (var i = 0; i < body.targets.length; i++){
+                //     renderer.drawRect(body.targets[i].x, -body.targets[i].y, 2, 2, [1.0, 1.0, 0.0], 1.0);
+                //     //Old positions
+                //     renderer.drawRect(body.old_foot_pos[i].x, -body.old_foot_pos[i].y, 2, 2, [0.0, 1.0, 0.0], 1.0);
+                // }
+                // renderer.drawRect(body.pos.x - 1, -body.pos.y + 1, 2, 2, [1.0, 0.0, 0.0], 1.0);
             }
             if (flags['left_down'] == 1){
 

@@ -84,7 +84,7 @@ export class Menu extends Scene {
                 playSound(sfx_sources["button_click"].src, sfx_ctx);
             }
           });
-      this.buttons = [play_button, ins_button];
+      this.buttons = [play_button];
       this.frame = 0;
     }
     update(delta) {frame++;}
@@ -134,6 +134,9 @@ export class Menu extends Scene {
         }
     }
     unload(){
+    }
+    load(){
+
     }
 }
 
@@ -213,6 +216,8 @@ export class GameScene extends Scene {
         super.load();
         overlay.style.zIndex = 4;
         //gl.style.zIndex = 8;
+        music_player.setBuffer(music_sources["main"]);
+        music_player.play(true);
     }
     unload(){
         //this.game = null;
@@ -310,8 +315,8 @@ export class End extends Scene {
                Game.renderer.camera.pz = 25,
                Game.game.battle = false;
                //Reset titans
-               Game.game.current_titan.hp = 500;
-               Game.game.test_opp.hp = 500;
+
+               Game.game.resetTitans();
                changeScene(Game.game_scene);
                playSound(sfx_sources["button_click"].src, sfx_ctx);
            }

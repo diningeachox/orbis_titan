@@ -210,6 +210,9 @@
 
 import {init} from './src/game.js';
 import {AudioPlayer, addSound} from './src/sound.js';
+
+import sound_data from './src/sound.json' assert { type: 'json' };
+
 var modules = {};
 modules.init = init;
 
@@ -272,7 +275,29 @@ for (var key of Object.keys(arr)) {
     promises.push(loadImage(key, loadedImages));
 }
 promises.push(loadFonts());
-promises.push(addSound("button_click", sfx_sources, sfx_ctx, "./audio/button_click.ogg"));
+//promises.push(addSound("button_click", sfx_sources, sfx_ctx, "./audio/button_click.ogg"));
+
+//Load sounds from json configs
+function loadAllSounds(){
+    //Fetch configurations from volume.json
+    console.log("Preset volumes: " + sound_data); //Volume specifications for each file
+    for (var key of Object.keys(sound_data)){
+        var sources = null;
+        var ctx = null;
+        if (sound_data[key].type == "music"){
+            sources = music_sources;
+            ctx = music_ctx;
+        } else if (sound_data[key].type == "sfx"){
+            sources = sfx_sources;
+            ctx = sfx_ctx;
+        } else if (sound_data[key].type == "ambient"){
+            sources = ambient_sounds_sources;
+            ctx = ambient_sounds_ctx;
+        }
+        promises.push(addSound(key, sources, ctx, sound_data[key].src));
+    }
+}
+promises.push(loadAllSounds());
 
 //Actions after loading completes
 Promise.all(promises)
@@ -282,6 +307,8 @@ Promise.all(promises)
       music_player = new AudioPlayer(music_ctx);
       ambient_player = new AudioPlayer(ambient_sounds_ctx);
       sfx_player = new AudioPlayer(sfx_ctx);
+      console.log(music_sources)
+      //music_player.setBuffer(music_sources["main"]);
 
       console.log(images);
       init(); //Initialize game states

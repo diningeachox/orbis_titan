@@ -119,9 +119,9 @@ export class Titan {
             var chain = this.chains[i];
             var min_length = chainLength(chain) / 4 * 3;
             var dummy = new Vector2D(this.torso.width * 1.5, 0);
-
-            var diff = this.old_foot_pos[i].subtract(this.pos);
-            this.targets.push(dummy.rotate(diff.angle()).add(dest).add(new Vector2D(this.torso.width / 2, this.torso.height / 2)));
+            var mid = new Vector2D(this.torso.width / 2, this.torso.height / 2);
+            var diff = this.old_foot_pos[i].subtract(this.pos.add(mid));
+            this.targets.push(dummy.rotate(diff.angle()).add(dest).add(mid));
         }
     }
     /* Returns the feet that are grounded
@@ -410,8 +410,21 @@ export class Titan {
                         }
                     }
 
+                    var torso_too_close = true;
+                    var mid_diff = this.destination.subtract(this.pos.add(new Vector2D(this.torso.width / 2, this.torso.height / 2))).modulus();
+                    for (var j = 0; j < this.chains.length; j++){
+                        var chain = this.chains[j];
+                        //var endPoint = FK(chain);
+                        var endpoint_dist = this.destination.subtract(this.old_foot_pos[j]).modulus();
+                        //console.log(chainLength(chain))
+                        if (mid_diff > endpoint_dist){
+                            torso_too_close = false;
+                            break;
+                        }
+                    }
+
                     //Move when none of the legs are too close OR all legs are grounded
-                    if ( (!too_close && unreachable)) {
+                    if ( (!too_close && unreachable && !torso_too_close)) {
                         this.pos = this.pos.add(dir.scalarMult(this.speed));
                     } else {
                         //debugger;
@@ -427,7 +440,7 @@ export class Titan {
                             //debugger;
                             var temp_diff = this.temp_dest.subtract(this.pos);
                             let temp_dir = temp_diff.normalize();
-                            if (temp_diff.modulus() > this.speed && this.temp_dest.subtract(this.destination).modulus() <= diff.modulus()) {
+                            if (temp_diff.modulus() > this.speed) {
                                 //console.log(temp_dir.scalarMult(this.speed))
                                 this.pos = this.pos.add(temp_dir.scalarMult(this.speed));
                             } else {

@@ -1,0 +1,4 @@
+{
+     "main": {"src": "./audio/menu.mp3", "type": "music", "loop": true, "vol": 0.5},
+     "button_click": {"src": "./audio/button_click.ogg", "type": "sfx", "loop": true, "vol": 0.5}
+}
