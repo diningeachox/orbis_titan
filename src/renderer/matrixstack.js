@@ -1,4 +1,4 @@
-import {translate, rotateX, rotateY, rotateZ, scale, invert, transpose, multiply, mmv} from "./ops.js";
+import {translate, rotateX, rotateY, rotateZ, rightRotateZ, scale, invert, transpose, multiply, mmv} from "./ops.js";
 
 
 //Saves the context's current transformation matrix
@@ -33,20 +33,40 @@ MatrixStack.prototype.setCurrentMatrix = function(m) {
   return this.stack[this.stack.length - 1] = m;
 };
 
+MatrixStack.prototype.id = function() {
+  this.stack[this.stack.length - 1] = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+};
+
 // Translates the current matrix
 MatrixStack.prototype.translate = function(x, y, z) {
   var m = this.getCurrentMatrix();
-  var temp = m.slice();
-  translate(temp, [x, y, z]);
-  this.setCurrentMatrix(temp);
+  translate(m, [x, y, z]);
+  this.setCurrentMatrix(m);
 };
 
 // Rotates the current matrix around Z
 MatrixStack.prototype.rotateZ = function(angleInRadians) {
   var m = this.getCurrentMatrix();
-  var temp = m.slice();
-  rotateZ(temp, angleInRadians);
-  this.setCurrentMatrix(temp);
+  rotateZ(m, angleInRadians);
+  this.setCurrentMatrix(m);
+};
+
+// Rotates the current matrix around Z
+MatrixStack.prototype.rightRotateZ = function(angleInRadians) {
+  var m = this.getCurrentMatrix();
+  /***
+  Multiplying rotation matrices on the right here is necessarily because we
+  want the rotations to always be done before the translations,
+  which are multiplied from the left
+  ***/
+  rightRotateZ(m, angleInRadians);
+  this.setCurrentMatrix(m);
+};
+
+MatrixStack.prototype.rotateZAroundPoint = function(x, y, z, angleInRadians) {
+    this.translate(-x, -y, -z);
+    this.rotateZ(angleInRadians);
+    this.translate(x, y, z);
 };
 
 // Scales the current matrix

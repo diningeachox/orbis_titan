@@ -20,6 +20,8 @@ void main(void) {
 }
 `;
 
+
+
 export const simple_fs = `
 precision highp float;
 uniform vec3 light;
@@ -30,7 +32,6 @@ varying vec3 vColor;
 varying vec3 vNormal;
 varying vec3 fragPos;
 
-varying vec2 v_texcoord;
 
 void main(void) {
     vec3 normal = normalize(vNormal);
@@ -47,5 +48,30 @@ void main(void) {
     vec3 specular = vec3(1.0, 1.0, 1.0) * spec;
 
     gl_FragColor = vec4(ambient, alpha);
+}
+`;
+
+export const more_simple_vs = `
+precision highp float;
+attribute vec2 position;
+attribute vec3 color;
+uniform mat4 Pmatrix;
+uniform mat4 Vmatrix;
+uniform mat4 Mmatrix;
+varying vec3 vColor;
+
+void main(void) {
+    gl_Position = Pmatrix*Vmatrix*Mmatrix*vec4(position, 0., 1.);
+    vColor = color;
+}
+`;
+
+export const more_simple_fs = `
+precision highp float;
+uniform float alpha;
+varying vec3 vColor;
+
+void main(void) {
+    gl_FragColor = vec4(vColor, alpha);
 }
 `;

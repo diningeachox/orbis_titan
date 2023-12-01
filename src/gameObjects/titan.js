@@ -48,6 +48,7 @@ export class Titan {
 
         this.torso = config.torso;
         this.num_legs = config.torso.children.length;
+        //this.num_legs = 2;
 
         //Legs (specified by torso's children )
         for (var i = 0; i < this.num_legs; i++){
@@ -67,16 +68,17 @@ export class Titan {
             var cur_ap = leg;
             var accum_pos = new Vector2D(leg.width, 0);
 
-            let rootJoint = new Vector2D(this.torso.width / 2 * Math.cos(i * 2 * Math.PI / this.num_legs), this.torso.width / 2 * Math.sin(i * 2 * Math.PI / this.num_legs));
-            let rootBone = new Bone(rootJoint, i * 2 * Math.PI / this.num_legs, leg.width, leg.height, null);
+            //var rootJoint = new Vector2D(this.torso.width / 2 * Math.cos(i * 2 * Math.PI / this.num_legs), this.torso.width / 2 * Math.sin(i * 2 * Math.PI / this.num_legs));
+            var rootJoint = new Vector2D(this.torso.joints[i].pos.x + 1, this.torso.joints[i].pos.y + 1);
+            var rootBone = new Bone(rootJoint, leg.angle, leg.width, leg.height, null);
             var cur_bone = rootBone;
             while (cur_ap.children.length > 0){
                 var calf = ECS.entities.appendages[leg.children[0]];
 
                 //var newpos = new Vector2D(leg.width, 0);
                 calf.pos = accum_pos.copy();
-                calf.angle = Math.PI / this.num_legs;
-                let secondBone = new Bone(accum_pos, Math.PI / this.num_legs, calf.width, calf.height, null);
+                //calf.angle = Math.PI / this.num_legs;
+                let secondBone = new Bone(accum_pos, calf.angle, calf.width, calf.height, null);
                 secondBone.grounded = true; //Initialize as grounded
                 //The last joint
                 this.feet.push(secondBone);
@@ -88,12 +90,13 @@ export class Titan {
 
 
             leg.pos = rootJoint.copy();
-            leg.angle = i * 2 * Math.PI / this.num_legs;
+            //leg.angle = i * 2 * Math.PI / this.num_legs;
             //The end effector represents a whole chain
             this.chains.push(rootBone);
 
 
             //Push tip positions (these are fixed for now)
+            var half_size = new Vector2D(this.torso.width / 2, this.torso.height / 2);
             this.old_foot_pos.push(FK(rootBone).add(this.pos));
             this.targets.push(FK(rootBone).add(this.pos));
         }
@@ -110,11 +113,14 @@ export class Titan {
         this.temp_dest = dest.copy();
         //this.destination = dest;
         this.targets = [];
+        console.log("setting new targets")
         for (var i = 0; i < this.chains.length; i++){
             var chain = this.chains[i];
             var min_length = chainLength(chain) / 4 * 3;
-            var dummy = new Vector2D(this.radius + min_length + 1, 0);
-            this.targets.push(dummy.rotate(i * 2 * Math.PI / this.chains.length).add(dest));
+            var dummy = new Vector2D(this.torso.width * 1.5, 0);
+
+            var diff = this.old_foot_pos[i].subtract(this.pos);
+            this.targets.push(dummy.rotate(diff.angle()).add(dest));
         }
     }
     /* Returns the feet that are grounded
@@ -360,7 +366,7 @@ export class Titan {
                     }
 
                     //Move when none of the legs are too close OR all legs are grounded
-                    if (!too_close) {
+                    if ( (!too_close && unreachable)) {
                         this.pos = this.pos.add(dir.scalarMult(this.speed));
                     } else {
                         //debugger;
@@ -369,19 +375,23 @@ export class Titan {
                         let dir = diff.normalize();
 
                         //debugger;
-                        this.adjust_legs();
+                        if (!unreachable) {
+                            this.adjust_legs();
+                        }
                         if (this.atFeetTargets() && diff.modulus() > this.speed) {
                             //debugger;
                             var temp_diff = this.temp_dest.subtract(this.pos);
                             let temp_dir = temp_diff.normalize();
-                            if (temp_diff.modulus() > this.speed && this.temp_dest.subtract(this.destination).modulus() < diff.modulus()) {
-                                console.log(temp_dir.scalarMult(this.speed))
+                            if (temp_diff.modulus() > this.speed && this.temp_dest.subtract(this.destination).modulus() <= diff.modulus()) {
+                                //console.log(temp_dir.scalarMult(this.speed))
                                 this.pos = this.pos.add(temp_dir.scalarMult(this.speed));
                             } else {
                                 //this.pos = this.temp_dest.copy();
                                 diff = this.destination.subtract(this.pos);
                                 dir = diff.normalize();
-                                this.setNewTargets(dir, 5);
+                                if (diff.modulus() > this.speed) {
+                                    this.setNewTargets(dir, Math.min(5, diff.modulus()));
+                                }
                             }
                         }
 
@@ -413,6 +423,7 @@ export class Titan {
         } else {
             //Move legs into position
             //Move legs with the body and resolve IK in new location
+            //debugger;
             this.pos = this.destination.copy();
             this.adjust_legs();
         }
@@ -583,39 +594,47 @@ function draw_appendage(ap, game, ctx){
     }
 }
 
-export function draw_appendage_gl(renderer, ap, game){
+export function draw_appendage_gl(renderer, ap, game, build=false){
 
 
     //Shift matrix stack's top transformation to the position of appendage
-    renderer.matrixStack.save();
-    renderer.matrixStack.translate(ap.pos.x, -ap.pos.y, 0);
+    var angle = 0;
+    if (build){
+        renderer.matrixStack.save();
+        renderer.matrixStack.translate(ap.pos.x, -ap.pos.y, 0);
+        angle = ap.angle;
+    }
 
     //First draw appendage base tiles
+    renderer.drawRect(0, 0, ap.width, ap.height, [0.0, 0.0, 0.0], 1.0, angle);
     for (var i = 0; i < ap.height; i++){
         for (var j = 0; j < ap.width; j++){
-            renderer.drawRect(j, -(i), 1, 1, [0.0, 0.0, 0.0], 1.0, ap.angle);
-            renderer.drawSprite("appendage_tile", j + 0.05, -(i + 0.05), 0.90, 0.90, ap.angle);
+            //renderer.drawRect(j, -(i), 1, 1, [0.0, 0.0, 0.0], 1.0, angle);
+            renderer.drawSprite("appendage_tile", j + 0.05, -(i + 0.05), 0.90, 0.90, angle);
         }
     }
+
+    //renderer.drawRect(0, 0, ap.width, ap.height, ap.color, 0.3, angle, 0.06);
+
     //Batteries (under everything)
     for (const b of ap.batteries){
         var color = resource_colours[b.type];
-        renderer.drawRect(b.pos.x, -b.pos.y, 1, 1, rgba2dec(color), 0.6, ap.angle);
+        renderer.drawRect(b.pos.x, -b.pos.y, 1, 1, rgba2dec(color), 0.6, angle);
     }
 
     //Modules
     for (const mod of ap.modules){
         //var img = images[mod.name];
-        renderer.drawSprite(mod.name, mod.pos.x, -mod.pos.y, mod.width, mod.height, ap.angle, 0.1);
+        renderer.drawSprite(mod.name, mod.pos.x, -mod.pos.y, mod.width, mod.height, angle, 0.1);
     }
 
     //Connectors
     for (const c of ap.connectors){
         //output edge
-        renderer.drawRect(c.output_edge[0].x, -c.output_edge[0].y, c.output_edge[1].x - c.output_edge[0].x + 1, c.output_edge[1].y - c.output_edge[0].y + 1, [0.0, 1.0, 1.0], 0.6, ap.angle, 0.1);
+        renderer.drawRect(c.output_edge[0].x, -c.output_edge[0].y, c.output_edge[1].x - c.output_edge[0].x + 1, c.output_edge[1].y - c.output_edge[0].y + 1, [0.0, 1.0, 1.0], 0.6, angle, 0.1);
 
         //input edge
-        renderer.drawRect(c.input_edge[0].x, -c.input_edge[0].y, c.input_edge[1].x - c.input_edge[0].x + 1, c.input_edge[1].y - c.input_edge[0].y + 1, [1.0, 0.0, 1.0], 0.6, ap.angle, 0.1);
+        renderer.drawRect(c.input_edge[0].x, -c.input_edge[0].y, c.input_edge[1].x - c.input_edge[0].x + 1, c.input_edge[1].y - c.input_edge[0].y + 1, [1.0, 0.0, 1.0], 0.6, angle, 0.1);
 
         //Bezier curves as wires
         // ctx.strokeStyle = "rgb(255, 255, 255)";
@@ -635,58 +654,54 @@ export function draw_appendage_gl(renderer, ap, game){
 
     //Weapons
     for (const w of ap.weapons){
-        renderer.drawSprite(w.type, w.pos.x, -w.pos.y, w.width, w.height, ap.angle, 0.1);
-        // var img = images[w.type];
-        // var angle = Math.PI / 2 * w.orientation;
-        // ctx.translate(w.pos.x * game.grid_width, w.pos.y * game.grid_width);
-        // ctx.rotate(angle);
-        // ctx.drawImage(img, 0, 0, game.grid_width * w.width, game.grid_width * w.width * img.height / img.width);
-        // ctx.rotate(-angle);
-        // ctx.translate(-w.pos.x * game.grid_width, -w.pos.y * game.grid_width);
+        renderer.drawSprite(w.type, w.pos.x, -w.pos.y, w.width, w.height, angle, 0.1);
     }
 
     //Sinks (1 x 1)
     for (const s of ap.sinks){
-        renderer.drawSprite("reactor", s.pos.x, -s.pos.y, s.width, s.height, ap.angle, 0.1);
+        renderer.drawSprite("reactor", s.pos.x, -s.pos.y, s.width, s.height, angle, 0.1);
     }
 
     //joints
     for (const j of ap.joints){
-        renderer.drawSprite("joint-hinge", j.pos.x, -j.pos.y, j.width, j.height, ap.angle);
+        renderer.drawSprite("joint-hinge", j.pos.x, -j.pos.y, j.width, j.height, angle, 0.12);
     }
 
     //Quanta
     for (const q of ap.quanta){
         if (!q.type.includes("energy") && !q.type.includes("projectile")){
-            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), rgba2dec(resource_colours[q.type]), 1.0, ap.angle, 0.15);
+            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), rgba2dec(resource_colours[q.type]), 1.0, angle, 0.15);
             //blurCircle(ctx, q.pos.x * game.grid_width, q.pos.y * game.grid_width, game.grid_width / 16 * Math.sqrt(q.amount), q.type);
 
         } else if (q.type.includes("energy")){
-            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), rgba2dec(resource_colours[q.type]), 1.0, ap.angle, 0.15);
+            renderer.drawRect(q.pos.x, -q.pos.y, 1 / 16 * Math.sqrt(q.amount), 1 / 16 * Math.sqrt(q.amount), rgba2dec(resource_colours[q.type]), 1.0, angle, 0.15);
             //blurCircle(ctx, q.pos.x * game.grid_width, q.pos.y * game.grid_width, game.grid_width / 16 * Math.sqrt(q.amount), q.type, true);
         }
     }
 
-    renderer.matrixStack.restore();
+    if (build) renderer.matrixStack.restore();
 }
 
-export function draw_titan(renderer, root, pos, game){
+export function draw_titan(renderer, root, pos, prev_pos, prev_angle, game){
     //Shift position of matrixstack
+    renderer.matrixStack.save();
+    renderer.matrixStack.rightRotateZ(-prev_angle);
+    renderer.matrixStack.rightRotateZ(root.angle);
     renderer.matrixStack.translate(pos.x + (root.pos.x), -pos.y - (root.pos.y), 0);
-    renderer.matrixStack.rotateZ(root.angle);
-    // ctx.translate(pos.x + (root.pos.x) * game.grid_width, pos.y + (root.pos.y) * game.grid_width);
-    // ctx.rotate(root.angle);
+    //renderer.matrixStack.rotateZ(root.angle);
+    renderer.matrixStack.rotateZAroundPoint(prev_pos.x, -prev_pos.y, 0, prev_angle);
 
     draw_appendage_gl(renderer, root, game);
 
+
     for (const key of root.children){
         var ap = ECS.entities.appendages[key];
-        draw_titan(renderer, ap, new Vector2D(0, 0), game);
+        var new_pos = {x:prev_pos.x + root.pos.x, y:prev_pos.y + root.pos.y};
+        draw_titan(renderer, ap, new Vector2D(0, 0), new_pos, prev_angle + root.angle, game);
     }
+    renderer.matrixStack.restore();
+    //renderer.matrixStack.rightRotateZ(-root.angle);
+    //renderer.matrixStack.translate(-pos.x - (root.pos.x), pos.y + (root.pos.y), 0);
 
-    // ctx.rotate(-root.angle);
-    // ctx.translate(-pos.x - (root.pos.x) * game.grid_width, -pos.y - (root.pos.y) * game.grid_width);
-    renderer.matrixStack.rotateZ(-root.angle);
-    renderer.matrixStack.translate(-pos.x - (root.pos.x), pos.y + (root.pos.y), 0);
 
 }

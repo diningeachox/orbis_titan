@@ -809,15 +809,15 @@ export class BuildScene extends Scene {
            //Draw temp titan
            if (temp_titan_config.torso != null){
 
-                draw_appendage_gl(renderer, temp_titan_config.torso, null);
+                draw_appendage_gl(renderer, temp_titan_config.torso, null, true);
            }
            for (const x of temp_titan_config.appendages){
                 var cur_ap = ECS.entities.appendages[x];
-                draw_appendage_gl(renderer, cur_ap, null);
+                draw_appendage_gl(renderer, cur_ap, null, true);
                 while (cur_ap.children.length > 0){
                     cur_ap = ECS.entities.appendages[cur_ap.children[0]];
                     console.log(cur_ap)
-                    draw_appendage_gl(renderer, cur_ap, null);
+                    draw_appendage_gl(renderer, cur_ap, null, true);
                 }
            }
 
@@ -839,7 +839,7 @@ export class BuildScene extends Scene {
                    appendage.pos.x = renderer.selected_coords.x;
                    appendage.pos.y = -renderer.selected_coords.y;
                    //renderer.render(null);
-                   draw_appendage_gl(renderer, appendage, null);
+                   draw_appendage_gl(renderer, appendage, null, true);
                    //Draw green selection box
                    renderer.matrixStack.save();
                    renderer.matrixStack.translate(appendage.pos.x, renderer.selected_coords.y, 0);
@@ -865,9 +865,6 @@ export class BuildScene extends Scene {
            c.font = "30px buttonFont";
            c.fillText("Hold Z or X to rotate appendages", this.mid_w - 200, this.mid_h / 2 * 3 + 30);
 
-           //Draw on webGL renderer
-           //renderer.render(null);
-           //draw_appendage_gl(renderer, appendage, null);
 
        }
 

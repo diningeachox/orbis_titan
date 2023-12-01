@@ -295,7 +295,7 @@ class Game {
                         ];
         var test_connectors = [Connector(testm, "north", testm2, "south")];
         var test_sinks = [Sink(9, 4), Sink(11, 5)];
-        var test_joint = Joint(20, 2);
+        var test_joint = Joint(19, 2);
         var test_weapons = [Weapon({type: "gun", pos: {x: 15, y: 5}, orientation: 0})];
 
 
@@ -305,14 +305,15 @@ class Game {
             var test_appendage_config = {"width": 20, "height": 7, "shell": [],
                                         "modules": [testm, testm2], "weapons": test_weapons,
                                         "batteries": this.batteries, "connectors": test_connectors,
-                                        "joints": [test_joint, Joint(-1, 2)], "sinks": test_sinks,
+                                        "joints": [Joint(19, 2), Joint(0, 2)], "sinks": test_sinks,
                                         "children": [], "pos": {x:0, y:0}};
             var test_appendage = Appendage(test_appendage_config);
             //var test_appendage_2 = Object.assign({}, test_appendage);
             var test_appendage_2 = copyObject(test_appendage);
             //test_appendage_2.pos = {x:Assets.canvas.width, y:Assets.canvas.height / 2};
-            //test_appendage_2.angle = Math.PI;
-            //test_appendage.children.push(test_appendage_2.id);
+            test_appendage.angle = -Math.PI / 4 * i;
+            test_appendage_2.angle = -Math.PI / 6;
+            test_appendage.children.push(test_appendage_2.id);
             console.log(test_appendage.children)
             ECS.entities.appendages[test_appendage.id] = test_appendage;
             ECS.entities.appendages[test_appendage_2.id] = test_appendage_2;
@@ -328,8 +329,8 @@ class Game {
         var test_torso_config = {"width": 20, "height": 20, "shell": [],
                                       "modules": [testm, testm2], "weapons": test_weapons,
                                       "batteries": this.batteries, "connectors": test_connectors,
-                                      "joints": [test_joint, Joint(-1, 2), Joint(20, 17), Joint(-1, 17)], "sinks": test_sinks,
-                                      "children": children, "pos": {x:0, y: 0}};
+                                      "joints": [Joint(19, 17), Joint(19, 2), Joint(0, 2), Joint(0, 17)], "sinks": test_sinks,
+                                      "children": children, "pos": {x:-0, y: -0}};
 
         var test_torso = Torso(test_torso_config);
         this.test_torso = test_torso;
@@ -339,8 +340,8 @@ class Game {
         ECS.blueprints.torsos[test_torso.id] = test_torso;
         createAppendageImage(test_torso, 80);
         console.log(test_torso)
-
-        console.log(JSON.stringify(test_appendage));
+        console.log(ECS.entities.appendages)
+        //console.log(JSON.stringify(test_appendage));
 
         //var appendage_copy = JSON.parse(JSON.stringify(test_appendage));
 
@@ -392,6 +393,9 @@ class Game {
                     this.current_titan.setNewTargets(dir, 5);
                 }
             }
+
+            //test
+            renderer.drawLineStrips(0, 0, [0.0, 0.0, 2.0, 2.0,   2.0, 2.0, 3.0, 10.0], [1.0, 0.0, 1.0]);
             this.current_titan.update(delta);
             ECS.systems.update(this, delta);
         }
@@ -418,37 +422,29 @@ class Game {
         } else {
             renderer.render(this);
             //debugger;
-            if (game.current_titan != null){
-                draw_titan(renderer, game.current_titan.torso, game.current_titan.pos, game);
+            //Background arena
+            renderer.drawSprite("arena", -100, 100, 300, 300, 0, -0.1);
+            if (this.current_titan != null){
+                draw_titan(renderer, this.current_titan.torso, this.current_titan.pos, this.current_titan.pos, 0, this);
+                //debugger;
+
+                //Debug mode
+                var body = game.current_titan;
+                for (var i = 0; i < body.targets.length; i++){
+                    renderer.drawRect(body.targets[i].x, -body.targets[i].y, 2, 2, [1.0, 1.0, 0.0], 1.0);
+
+                    //Old positions
+                    renderer.drawRect(body.old_foot_pos[i].x, -body.old_foot_pos[i].y, 2, 2, [0.0, 1.0, 0.0], 1.0);
+                }
+                renderer.drawRect(body.pos.x - 1, -body.pos.y + 1, 2, 2, [1.0, 0.0, 0.0], 1.0);
             }
             if (flags['left_down'] == 1){
 
                 const bcr = Assets.gl.getBoundingClientRect();
                 renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
-                renderer.drawRect(renderer.selected_coords.x, renderer.selected_coords.y, 1, 1, [1.0, 0.0, 0.0], 1.0)
+                renderer.drawRect(renderer.selected_coords.x, renderer.selected_coords.y, 1, 1, [1.0, 0.0, 0.0], 1.0);
             }
         }
-
-        //renderer.render(this);
-        //draw_appendage_gl(renderer, this.test_torso, this);
-
-        // if (flags['left_down'] == 1){
-        //
-        //     const bcr = Assets.gl.getBoundingClientRect();
-        //     renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
-        //     renderer.drawRect(renderer.selected_coords.x, renderer.selected_coords.y, 1, 1, [1.0, 0.0, 0.0], 1.0)
-        // }
-
-        // var newCanvas = document.createElement('canvas');
-        // newCanvas.width = Assets.canvas.width
-        // newCanvas.height = Assets.canvas.height;
-        // var newContext = newCanvas.getContext('2d');
-        //
-        // newContext.transform(1, 0, 0, -1, 0, newCanvas.height);
-        // newContext.drawImage(Assets.canvas, 0, 0, Assets.canvas.width, Assets.canvas.height);
-        //
-        //
-
     }
 }
 

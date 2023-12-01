@@ -90,6 +90,8 @@ export class BattleScene extends Scene {
         c.textAlign = "center";
         c.fillText("choose your mech", canvas.width/2, 100);
 
+        c.drawImage(images["vs"], canvas.width/2 - 200, canvas.height/2 - 200, 400, 400);
+
         for (var i = 0; i < this.buttons.length; i++){
             this.buttons[i].draw(c);
         }

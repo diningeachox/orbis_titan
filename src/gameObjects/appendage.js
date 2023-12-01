@@ -35,7 +35,8 @@ const Appendage = (config) => {
       angle: config.angle || 0,
       weight: 0,
       quanta: [],
-      torso: false
+      torso: false,
+      color: [1.0, 0.0, 0.0]
     };
 }
 

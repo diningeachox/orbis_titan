@@ -16,6 +16,11 @@ export function rotateZ(t,n){
     t[0]=a*t[0]+r*t[1],t[4]=a*t[4]+r*t[5],t[8]=a*t[8]+r*t[9],t[12]=a*t[12]+r*t[13]
     t[1]=a*t[1]-r*o,t[5]=a*t[5]-r*e,t[9]=a*t[9]-r*i,t[13]=a*t[13]-r*u}
 
+export function rightRotateZ(t,n){
+    var a=Math.cos(n),r=-Math.sin(n),o=t[0],e=t[1],i=t[2],u=t[3];
+    t[0]=a*t[0]+r*t[4],t[1]=a*t[1]+r*t[5],t[2]=a*t[2]+r*t[6],t[3]=a*t[3]+r*t[7]
+    t[4]=a*t[4]-r*o,t[5]=a*t[5]-r*e,t[6]=a*t[6]-r*i,t[7]=a*t[7]-r*u}
+
 export function invert(t,n){let a=n[0],r=n[1],o=n[2],e=n[3],i=n[4],u=n[5],c=n[6],s=n[7],f=n[8],l=n[9],h=n[10],M=n[11],v=n[12],p=n[13],m=n[14],y=n[15],X=a*u-r*i,Y=a*c-o*i,Z=a*s-e*i,b=r*c-o*u,d=r*s-e*u,g=o*s-e*c,j=f*p-l*v,k=f*m-h*v,q=f*y-M*v,w=l*m-h*p,x=l*y-M*p,z=h*y-M*m,A=X*z-Y*x+Z*w+b*q-d*k+g*j;return A?(A=1/A,t[0]=(u*z-c*x+s*w)*A,t[1]=(o*x-r*z-e*w)*A,t[2]=(p*g-m*d+y*b)*A,t[3]=(h*d-l*g-M*b)*A,t[4]=(c*q-i*z-s*k)*A,t[5]=(a*z-o*q+e*k)*A,t[6]=(m*Z-v*g-y*Y)*A,t[7]=(f*g-h*Z+M*Y)*A,t[8]=(i*x-u*q+s*j)*A,t[9]=(r*q-a*x-e*j)*A,t[10]=(v*d-p*Z+y*X)*A,t[11]=(l*Z-f*d-M*X)*A,t[12]=(u*k-i*w-c*j)*A,t[13]=(a*w-r*k+o*j)*A,t[14]=(p*Y-v*b-m*X)*A,t[15]=(f*b-l*Y+h*X)*A,t):null}
 
 export function transpose(t,n){if(t===n){let a=n[1],r=n[2],o=n[3],e=n[6],i=n[7],u=n[11];t[1]=n[4],t[2]=n[8],t[3]=n[12],t[4]=a,t[6]=n[9],t[7]=n[13],t[8]=r,t[9]=e,t[11]=n[14],t[12]=o,t[13]=i,t[14]=u}else t[0]=n[0],t[1]=n[4],t[2]=n[8],t[3]=n[12],t[4]=n[1],t[5]=n[5],t[6]=n[9],t[7]=n[13],t[8]=n[2],t[9]=n[6],t[10]=n[10],t[11]=n[14],t[12]=n[3],t[13]=n[7],t[14]=n[11],t[15]=n[15];return t}
