@@ -997,8 +997,6 @@ export class BuildScene extends Scene {
                                 var util = copyObject(ECS.blueprints.utilities[selection_type]);
 
                                 //Add module to base plate of appendage
-
-
                                 if (row + util.height <= temp_appendage.height && col + util.width <= temp_appendage.width && highlight_color == "rgba(0, 255, 0, 0.5)"){
                                     util.pos.x = col;
                                     util.pos.y = row;
@@ -1143,6 +1141,11 @@ export class BuildScene extends Scene {
                                highlight_color = "rgba(0, 255, 0, 0.5)";
                            } else {
                                highlight_color = "rgba(255, 0, 0, 0.5)";
+                           }
+                           if (selection_type == "Joint"){
+                              if (temp_appendage.joints.length == 2 && temp_appendage.torso == false){
+                                  highlight_color = "rgba(255, 0, 0, 0.5)";
+                              }
                            }
                        } else {
                            //if (temp_appendage.modules.length > 0) debugger;

@@ -270,7 +270,7 @@ export function updateAppendage(game, ap, delta){
                         //Generate new quantum on output edges
                         for (const type of Object.keys(chip.rates.output)){
                             var output_quantity = chip.rates.output[type];
-                            if (output_quantity > 0) game.quanta.push(Quantum(j + m.pos.x + 0.5, i + m.pos.y + 0.45, 0, -0.01, chip.output, output_quantity));
+                            if (output_quantity > 0) game.quanta.push(Quantum(j + m.pos.x + 0.5, i + m.pos.y + 0.45, 0, -0.01, chip.output[0], output_quantity));
                         }
                     }
                 }
@@ -284,6 +284,9 @@ ECS.systems.update = function systemUpdate(game, delta){
     for (const key of Object.keys(ECS.entities.appendages)){
         var ap = ECS.entities.appendages[key];
         updateAppendage(game, ap, delta);
+    }
+    for (const proj of game.projectiles){
+        proj.update(delta);
     }
 }
 

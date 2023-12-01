@@ -49,9 +49,9 @@ export class GL_Renderer {
 
         this.camera = {
           matrix:[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1],
-          px:0,
-          py:0,
-          pz:5,
+          px:3,
+          py:-3,
+          pz:25,
           elev:0,
           ang:0,
           roll:0,
@@ -204,13 +204,13 @@ export class GL_Renderer {
         //Keys
         //Left/Right
         if (flags["h"] != 0) {
-            this.camera.px -= dt * this.pan_speed * (flags["h"] == -1 ? 1 : -1);
+            this.camera.px -= dt * this.pan_speed * (flags["h"] == -1 ? 1 : -1) * Math.sqrt(this.camera.pz) / 2;
             //this.camera.ang -= dt * this.pan_speed * (flags["h"] == -1 ? 1 : -1);
         }
 
         //Up/down keys
         if (flags["v"] != 0) {
-            this.camera.py -= dt * this.pan_speed * (flags["v"] == 1 ? 1 : -1);
+            this.camera.py -= dt * this.pan_speed * (flags["v"] == 1 ? 1 : -1) * Math.sqrt(this.camera.pz) / 2;
         }
     }
 
@@ -228,9 +228,6 @@ export class GL_Renderer {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
         // Select correct shader
-        // this.drawSprite("appendage_tile", 0, 0, 1, 1);
-        // this.drawSprite("appendage_tile", 1, 1, 2, 2);
-        // this.drawRect(1, -1, 2, 2, [0.0, 1.0, 0.3], 0.5);
     }
 
     drawSprite(img_name, x, y, w, h, angle=0, depth=0.05){

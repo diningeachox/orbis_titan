@@ -14,10 +14,13 @@ import {BattleScene} from "./subscenes/battle_scene.js";
 import {MarketScene} from "./subscenes/market_scene.js";
 import {copyObject} from "./utils.js";
 
+import {P1, P2} from "./projectile.js";
+
 import {GL_Renderer} from "./renderer/gl_renderer.js";
 
 import module_data from '../presets/modules.json' assert { type: 'json' };
 import weapon_data from '../presets/weapons.json' assert { type: 'json' };
+import appendage_data from '../presets/appendages.json' assert { type: 'json' };
 //Variables from assets.js
 var canvas = Assets.canvas;
 var overlay = Assets.overlay;
@@ -307,7 +310,9 @@ class Game {
                                         "batteries": this.batteries, "connectors": test_connectors,
                                         "joints": [Joint(19, 2), Joint(0, 2)], "sinks": test_sinks,
                                         "children": [], "pos": {x:0, y:0}};
-            var test_appendage = Appendage(test_appendage_config);
+            var test_appendage = copyObject(appendage_data["test_ap"]);
+            //var test_appendage = Appendage(test_appendage_config);
+            console.log(JSON.stringify(test_appendage));
             //var test_appendage_2 = Object.assign({}, test_appendage);
             var test_appendage_2 = copyObject(test_appendage);
             //test_appendage_2.pos = {x:Assets.canvas.width, y:Assets.canvas.height / 2};
@@ -339,7 +344,7 @@ class Game {
         ECS.blueprints.appendages[test_torso.id] = test_torso;
         ECS.blueprints.torsos[test_torso.id] = test_torso;
         createAppendageImage(test_torso, 80);
-        console.log(test_torso)
+        console.log(JSON.stringify(test_torso))
         console.log(ECS.entities.appendages)
         //console.log(JSON.stringify(test_appendage));
 
@@ -350,7 +355,10 @@ class Game {
         this.appendages = {"test": test_appendage};
         this.titans = {};
 
-
+        this.projectiles = [];
+        this.projectiles.push(P1({x:0, y:0, dir: new Vector2D(0.1, 1), color: [1.0, 1.0, 0.0], owner:0}));
+        this.projectiles.push(P1({x:3, y:-3, dir: new Vector2D(0.1, -1), color: [1.0, 1.0, 1.0], owner:0}));
+        this.projectiles.push(P2({x:5, y:-1, dir: new Vector2D(-0.5, -0.1), color: [0.5, 0.5, 1.0], owner:0}));
 
         var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": test_torso};
         var test_titan = new Titan(test_titan_config);
@@ -426,23 +434,28 @@ class Game {
             renderer.drawSprite("arena", -100, 100, 300, 300, 0, -0.1);
             if (this.current_titan != null){
                 draw_titan(renderer, this.current_titan.torso, this.current_titan.pos, this.current_titan.pos, 0, this);
-                //debugger;
 
                 //Debug mode
-                var body = game.current_titan;
-                for (var i = 0; i < body.targets.length; i++){
-                    renderer.drawRect(body.targets[i].x, -body.targets[i].y, 2, 2, [1.0, 1.0, 0.0], 1.0);
-
-                    //Old positions
-                    renderer.drawRect(body.old_foot_pos[i].x, -body.old_foot_pos[i].y, 2, 2, [0.0, 1.0, 0.0], 1.0);
-                }
-                renderer.drawRect(body.pos.x - 1, -body.pos.y + 1, 2, 2, [1.0, 0.0, 0.0], 1.0);
+                // var body = game.current_titan;
+                // for (var i = 0; i < body.targets.length; i++){
+                //     renderer.drawRect(body.targets[i].x, -body.targets[i].y, 2, 2, [1.0, 1.0, 0.0], 1.0);
+                //     //Old positions
+                //     renderer.drawRect(body.old_foot_pos[i].x, -body.old_foot_pos[i].y, 2, 2, [0.0, 1.0, 0.0], 1.0);
+                // }
+                // renderer.drawRect(body.pos.x - 1, -body.pos.y + 1, 2, 2, [1.0, 0.0, 0.0], 1.0);
             }
             if (flags['left_down'] == 1){
 
                 const bcr = Assets.gl.getBoundingClientRect();
                 renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
                 renderer.drawRect(renderer.selected_coords.x, renderer.selected_coords.y, 1, 1, [1.0, 0.0, 0.0], 1.0);
+            }
+
+            //Render projectiles (in front of the appendages)
+            for (const proj of this.projectiles){
+                //debugger;
+                console.log(proj.pos.x, proj.pos.y)
+                renderer.drawRect(proj.pos.x, proj.pos.y, proj.size, proj.size, proj.color, 1.0, 0.0, 2.5);
             }
         }
     }

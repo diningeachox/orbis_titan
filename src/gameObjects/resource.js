@@ -51,6 +51,7 @@ formulas.set("aquam-gravitum-photum", "energy1");
 formulas.set("aetherium-gravitum-photum", "energy2");
 formulas.set("aetherium-aquam-photum", "energy3");
 formulas.set("aetherium-aquam-gravitum", "energy4");
+
 // 3rd order resources
 var second_order_res = ["electrum", "pyrum", "plasmium", "rapidum", "fortinium", "vitalium"];
 
