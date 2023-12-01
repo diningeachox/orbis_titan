@@ -51,6 +51,35 @@ void main(void) {
 }
 `;
 
+export const simple_circle_fs = `
+precision highp float;
+uniform vec3 light;
+uniform vec3 viewPos;
+uniform float alpha;
+
+varying vec3 vColor;
+varying vec3 vNormal;
+varying vec3 fragPos;
+
+
+void main(void) {
+    vec3 normal = normalize(vNormal);
+    vec3 lightDir = normalize(light - fragPos);
+
+    vec3 ambient = vColor;
+
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = vec3(1.0, 1.0, 1.0) * diff;
+
+    vec3 viewDir = normalize(viewPos - fragPos);
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    vec3 specular = vec3(1.0, 1.0, 1.0) * spec;
+
+    gl_FragColor = vec4(ambient, alpha);
+}
+`;
+
 export const more_simple_vs = `
 precision highp float;
 attribute vec2 position;

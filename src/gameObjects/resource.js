@@ -19,7 +19,7 @@ Resource types:
 
 3rd Order
     (Projectile and ammo types, 4 2nd-order = 15)
-    (Energy types, 3 2nd-order = 4)
+    (Energy types, 3 1st-order = 4)
 
 ***/
 
@@ -41,7 +41,9 @@ formulas.set("gravitum-aquam", "vitalium");
 formulas.set("aquam-gravitum", "vitalium");
 
 formulas.set("aetherium-aquam", "rapidum");
+
 formulas.set("aetherium-photum", "pyrum");
+
 formulas.set("aetherium-gravitum", "plasmium");
 
 
@@ -70,6 +72,7 @@ export const keys = {
   "photum": "1",
   "aquam": "2",
   "gravitum": "3",
+  "aetherium": "9",
 
   //Second order
   "electrum": "4",
@@ -93,6 +96,7 @@ export const resource_colours = {
   "photum": "rgba(245,245,220,1)",
   "aquam": "rgba(137,207,240,1)",
   "gravitum": "rgba(62,49,23,1)",
+  "aetherium": "rgba(255,0,255,1)",
 
   //Second order
   "electrum": "rgba(255,255,0,1)",
@@ -100,6 +104,7 @@ export const resource_colours = {
   "rapidum": "rgba(255,0,255,1)",
   "fortinium": "rgba(103,10,10,1)",
   "vitalium": "rgba(0,255,255,1)",
+  "plasmium": "rgba(255,0,0,1)",
 
   //Third order
   "energy1": "rgba(255,255,0,1)",
@@ -112,6 +117,8 @@ export const gl_resource_colours = {
   "photum": "rgba(245,245,220,1)",
   "aquam": "rgba(137,207,240,1)",
   "gravitum": "rgba(62,49,23,1)",
+  "aetherium": "rgba(255,0,255,1)",
+  "plasmium": "rgba(255,0,0,1)",
 
   //Second order
   "electrum": "rgba(255,255,0,1)",

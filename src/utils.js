@@ -43,7 +43,7 @@ export function uuidv4() {
 
 export function copyObject(obj){
     var new_obj = JSON.parse(JSON.stringify(obj));
-    var new_id = uuidv4()
+    var new_id = uuidv4();
     if (new_obj.hasOwnProperty("id")) {
         new_obj.id = new_id;
         images[new_id] = images[obj.id];

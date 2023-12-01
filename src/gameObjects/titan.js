@@ -5,6 +5,7 @@ import {Vector2D} from "../vector2D.js";
 import {Bone, FK, isFootGrounded, groundToggle, chainLength} from "../kinematics/bone.js";
 import {resource_colours, formulas, keys, char_keys} from "./resource.js";
 import {isNum, uuidv4, set_difference, shuffle, rgba2dec} from "../utils.js";
+import {Explosion, P1, P2} from "../projectile.js";
 
 export function blurCircle(ctx, x, y, radius, type, energy=false){
     var base_color = resource_colours[type];
@@ -34,6 +35,9 @@ export class Titan {
         this.chain_speed = 0.15;
         this.min_grounded_feet = 2;
         this.appendages = config.appendages;
+        this.hp = config.hp;
+
+        this.id = config.id; // 0 - Player, 1 - Opponent
         //this.num_legs = config.appendages.length;
 
         this.bones = [];
@@ -100,9 +104,6 @@ export class Titan {
             this.old_foot_pos.push(FK(rootBone).add(this.pos));
             this.targets.push(FK(rootBone).add(this.pos));
         }
-
-
-
     }
     /*
     Sets new targets for feet in a circle around the destination position
@@ -120,7 +121,7 @@ export class Titan {
             var dummy = new Vector2D(this.torso.width * 1.5, 0);
 
             var diff = this.old_foot_pos[i].subtract(this.pos);
-            this.targets.push(dummy.rotate(diff.angle()).add(dest));
+            this.targets.push(dummy.rotate(diff.angle()).add(dest).add(new Vector2D(this.torso.width / 2, this.torso.height / 2)));
         }
     }
     /* Returns the feet that are grounded
@@ -208,8 +209,27 @@ export class Titan {
         }
     }
 
+    checkWeapon(w){
+        //Fire when having the requisite resources
+        var enough = true;
+        for (const key of Object.keys(w.ammo)){
+            if (w.ammo[key] < 6){
+                enough = false;
+                break;
+            }
+        }
+        if (enough){
+            for (const key of Object.keys(w.ammo)){
+                w.ammo[key] = 0; //Reset storage (Extra gets wasted)
+            }
+            // var proj = P1()
+            // game.projectiles.push(proj);
+        }
+        return enough;
+    }
 
-    update(delta){
+
+    update(game, delta){
         //Sync appendage data with bone data
         for (var i = 0; i < this.num_legs; i++){
             //Root bone/joint (0, 0, 0) right at center position
@@ -222,12 +242,34 @@ export class Titan {
             thirdBone.grounded = true; //Initialize as grounded
             */
 
+
+
             //starting positin of second joint
             //newpos = newpos.rotate(i * Math.PI / 5);
             var leg = ECS.entities.appendages[this.torso.children[i]];
             var calf = ECS.entities.appendages[leg.children[0]];
 
             var leg_bone = this.chains[i];
+
+
+            /** Projectile and item updates **/
+            for (const w of leg.weapons){
+                var ready_to_fire = this.checkWeapon(w);
+                //Get absolute position of weapon
+                if (ready_to_fire){
+                    var origin = new Vector2D(this.torso.joints[i].pos.x + 1, this.torso.joints[i].pos.y + 1).add(this.pos);
+                    var weapon_pos = origin.add(new Vector2D(w.pos.x, w.pos.y).rotate(leg.angle));
+                    var shoot_dir = new Vector2D(0, 0);
+                    if (this.id == 0){
+                        shoot_dir = game.test_opp.pos.subtract(this.pos).normalize();
+                    } else {
+                        shoot_dir = game.current_titan.pos.subtract(this.pos).normalize();
+                    }
+                    var proj = P1({x:weapon_pos.x, y:weapon_pos.y, dir: shoot_dir, color: [1.0, 1.0, 0.0], owner:this.id});
+                    game.projectiles.push(proj);
+                }
+
+            }
 
             //debugger;
             leg.pos = leg_bone.pos.copy();
@@ -241,7 +283,10 @@ export class Titan {
             }
         }
 
-        //debugger;
+        /**
+        Movement and navigation updates
+        **/
+
         let diff = this.destination.subtract(this.pos);
         let dir = diff.normalize();
 
@@ -375,9 +420,9 @@ export class Titan {
                         let dir = diff.normalize();
 
                         //debugger;
-                        if (!unreachable) {
-                            this.adjust_legs();
-                        }
+
+                        this.adjust_legs();
+
                         if (this.atFeetTargets() && diff.modulus() > this.speed) {
                             //debugger;
                             var temp_diff = this.temp_dest.subtract(this.pos);
@@ -619,7 +664,7 @@ export function draw_appendage_gl(renderer, ap, game, build=false){
     //Batteries (under everything)
     for (const b of ap.batteries){
         var color = resource_colours[b.type];
-        renderer.drawRect(b.pos.x, -b.pos.y, 1, 1, rgba2dec(color), 0.6, angle);
+        renderer.drawRect(b.pos.x, -b.pos.y, 1, 1, rgba2dec(color), 0.6, angle, 0.1);
     }
 
     //Modules

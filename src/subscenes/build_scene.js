@@ -15,6 +15,7 @@ import {updateAppendage} from "../system.js";
 import {GL_Renderer} from "../renderer/gl_renderer.js";
 
 //JSON data
+import chip_data from '../../presets/chips.json' assert { type: 'json' };
 import module_data from '../../presets/modules.json' assert { type: 'json' };
 import weapon_data from '../../presets/weapons.json' assert { type: 'json' };
 
@@ -71,9 +72,11 @@ var module_button = new Button({x: 110, y:170, width:200, height:50, label:"Modu
            update_regions(temp_module_w, temp_module_h, screen_vars.page);
        }
       });
+
  var back_button = new Button({x: 110, y:Assets.canvas.height - 100, width:200, height:50, label:"Back",
         onClick: function(){
             changeScene(game_scene);
+            Assets.gl.style.zIndex = 0;
             playSound(sfx_sources["button_click"].src, sfx_ctx);
         }
    });
@@ -114,8 +117,8 @@ var temp_module = [];
 
 function createChip(name){
     var chip = ChipFactory(temp_cell, name);
-    //game.chips[chip.name] = chip;
     ECS.blueprints.chips[name] = chip;
+
     var tab_panel = build_scene.tabbed_panels[1][0];
     tab_panel.tab_items["Chips"][0].options = Object.keys(ECS.blueprints.chips);
 
@@ -138,7 +141,7 @@ function createChip(name){
     newCanvas.remove();
 
     console.log("Created new chip!")
-    console.log(chip)
+    console.log(JSON.stringify(chip));
 }
 
 function createModule(name){
@@ -158,15 +161,15 @@ function createModule(name){
     newContext.drawImage(Assets.canvas, mid_w - block_width * temp_module_w / 2, mid_h - 200 + 25 + 40, newCanvas.width, newCanvas.height, 0, 0, newCanvas.width, newCanvas.height);
 
     //Black veil over the whole module
-    newContext.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    newContext.fillRect(0, 0, newCanvas.width, newCanvas.height);
+    //newContext.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    //newContext.fillRect(0, 0, newCanvas.width, newCanvas.height);
 
     //Add sprite to image array
     var image_data = newCanvas.toDataURL();
     images[name] = document.createElement('img');
     images[name].src = image_data;
     console.log("Created new module!")
-    //console.log(chip)
+    console.log(JSON.stringify(mod));
 }
 
 //Temporary connector
@@ -225,7 +228,7 @@ function createAppendage(name){
     images[name] = document.createElement('img');
     images[name].src = image_data;
     console.log("Created new module!")
-    //console.log(chip)
+    console.log(JSON.stringify(temp_appendage));
 }
 
 
@@ -306,7 +309,11 @@ export class BuildScene extends Scene {
      var clear_button = new Button({x: Assets.canvas.width / 2 + 150, y:Assets.canvas.height - 100, width:200, height:50, label:"Clear",
          onClick: function(){
              playSound(sfx_sources["button_click"].src, sfx_ctx);
-             resetCell();
+             if (screen_vars.page == 0) {
+                 resetCell();
+             } else if (screen_vars.page == 1){
+                 update_regions(temp_module_w, temp_module_h, screen_vars.page);
+             }
          }
         });
      this.clickables[0].push(new_cell_button);
@@ -323,7 +330,7 @@ export class BuildScene extends Scene {
      var cell_tabs = new TabbedPanel({
         x: Assets.canvas.width - 400, y: 150, tabs:["Inputs", "Outputs", "Units", "Mixers"]
      });
-     cell_tabs.addToTab("Units", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: Object.keys(resource_colours)})] );
+     cell_tabs.addToTab("Units", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["photum", "aquam", "gravitum", "aetherium"]})] );
      cell_tabs.addToTab("Inputs", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["BasicInput"]})] );
      cell_tabs.addToTab("Outputs", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["BasicOutput"]})] );
      cell_tabs.addToTab("Mixers", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["BasicMixer"]})] );
@@ -355,7 +362,7 @@ export class BuildScene extends Scene {
      var module_tabs = new TabbedPanel({
         x: Assets.canvas.width - 400, y: 150, tabs:["Chips", "Wires"]
      });
-     module_tabs.addToTab("Chips", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: module_tabs.width, options: []})] );
+     module_tabs.addToTab("Chips", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: module_tabs.width, options: Object.keys(chip_data)})] );
      module_tabs.addToTab("Wires", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: module_tabs.width, options: ["|", "Γ", "ヿ", "⅃", "L", "⼀", "⅃Γ", "Lヿ", "|⼀"]})] );
 
      this.tabbed_panels[1].push(module_tabs);
@@ -384,7 +391,7 @@ export class BuildScene extends Scene {
      appendage_tabs.addToTab("Modules", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(module_data)})] );
      appendage_tabs.addToTab("Weapons", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(weapon_data)})] );
      appendage_tabs.addToTab("Utilities", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: ["Connector", "Energy Sink", "Joint", "Mainframe"]})] );
-     appendage_tabs.addToTab("Batteries", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["aquam", "photum", "gravitum", "aetherium"]})] );
+     appendage_tabs.addToTab("Batteries", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["aquam", "photum", "gravitum", "aetherium", "electrum", "pyrum", "rapidum", "fortinium", "vitalium", "plasmium"]})] );
 
      this.tabbed_panels[2].push(appendage_tabs);
      this.clickables[2].push(new_appendage_button);
@@ -404,6 +411,8 @@ export class BuildScene extends Scene {
               //createModule(Assets.name_field.value);
           }
          });
+     new_titan_button.enabled = false;
+
      titan_tabs.addToTab("Appendages", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.appendages) })] );
      titan_tabs.addToTab("Torsos", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.torsos)})] );
      // titan_tabs.addToTab("Modules", [new IconMenu({x: Assets.canvas.width - 600, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(module_data)})] );
@@ -434,6 +443,7 @@ export class BuildScene extends Scene {
               //Reset game state
               mock_game.frame = 0;
               mock_game.quanta = [];
+              temp_appendage.quanta = [];
           }
        } else if (screen_vars.page == 3){
           renderer.updateCamera(delta); //Update webGL scene
@@ -699,7 +709,7 @@ export class BuildScene extends Scene {
             }
 
            //Quanta
-           for (const q of mock_game.quanta){
+           for (const q of temp_appendage.quanta){
                var coords_x = q.pos.x;
                var coords_y = q.pos.y;
                var draw_coords = this.screenXY(coords_x, coords_y);
@@ -876,7 +886,7 @@ export class BuildScene extends Scene {
    }
    handleMouseClick(mouseX, mouseY){
        for (var i = 0; i < this.buttons.length; i++){
-           this.buttons[i].handleMouseClick(mouseX, mouseY);
+           if (this.buttons[i].enabled) this.buttons[i].handleMouseClick(mouseX, mouseY);
        }
        //Non-button clickables
        for (var i = 0; i < this.clickables[screen_vars.page].length; i++){
@@ -934,7 +944,7 @@ export class BuildScene extends Scene {
                         var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
 
                         if (cur_tab == "Chips") {
-                            var chip = game.chips[selection_type];
+                            var chip = ECS.blueprints.chips[selection_type];
                             temp_module[i] = chip.str;
                         } else if (cur_tab == "Wires"){
                             temp_module[i] = selection_type;

@@ -5,7 +5,7 @@ import {playSound} from "./sound.js";
 import {Quantum} from "./gameObjects/resource.js";
 import {Vector2D} from "./vector2D.js";
 import {resource_colours, formulas} from "./gameObjects/resource.js";
-
+import {Explosion, P1, P2} from "./projectile.js";
 var canvas = Assets.canvas;
 var ol = Assets.ol;
 
@@ -19,13 +19,13 @@ export function updateAppendage(game, ap, delta){
     for (const b of ap.batteries){
         if (game.frame % b.rate == 0){
             //Spawn a new quantum in each orthogonal direction
-            game.quanta.push(Quantum(b.pos.x + 0.5, b.pos.y + 0.5, 0, -0.01, b.type, b.quantity)); //North
-            game.quanta.push(Quantum(b.pos.x + 0.5, b.pos.y + 0.5, 0, 0.01, b.type, b.quantity)); //South
-            game.quanta.push(Quantum(b.pos.x + 0.5, b.pos.y + 0.5, -0.01, 0, b.type, b.quantity)); //West
-            game.quanta.push(Quantum(b.pos.x + 0.5, b.pos.y + 0.5, 0.01, 0, b.type, b.quantity)); //East
+            ap.quanta.push(Quantum(b.pos.x + 0.5, b.pos.y + 0.5, 0, -0.01, b.type, b.quantity)); //North
+            ap.quanta.push(Quantum(b.pos.x + 0.5, b.pos.y + 0.5, 0, 0.01, b.type, b.quantity)); //South
+            ap.quanta.push(Quantum(b.pos.x + 0.5, b.pos.y + 0.5, -0.01, 0, b.type, b.quantity)); //West
+            ap.quanta.push(Quantum(b.pos.x + 0.5, b.pos.y + 0.5, 0.01, 0, b.type, b.quantity)); //East
         }
     }
-    //console.log(game.quanta)
+    //console.log(ap.quanta)
     //Update quanta
     // var m = game.modules[0];
     // if (game.frame % 60 == 0){
@@ -33,9 +33,9 @@ export function updateAppendage(game, ap, delta){
     //     m.out_edge.current = 0;
     // }
     //Absorb incoming quanta
-    for (var j = game.quanta.length - 1; j>=0; j--){
+    for (var j = ap.quanta.length - 1; j>=0; j--){
         //Travel along wires and cells
-        var q = game.quanta[j];
+        var q = ap.quanta[j];
         var vel = new Vector2D(0, 0);
         var in_module = false;
         var in_util = false;
@@ -53,7 +53,7 @@ export function updateAppendage(game, ap, delta){
 
                         //Check for chip absorbing the quantum
                         quantumInChip(q, chip);
-                        game.quanta.splice(j, 1);
+                        ap.quanta.splice(j, 1);
                         deleted = true;
 
                     } else if (grid.wires != ""){
@@ -119,6 +119,7 @@ export function updateAppendage(game, ap, delta){
                 }
                 in_util = true;
             }
+
         }
 
         //Check weapons
@@ -130,6 +131,8 @@ export function updateAppendage(game, ap, delta){
                 if (approx(rel_x - ~~(rel_x), 0.5) && approx(rel_y - ~~(rel_y), 0.5)){
                     if (w.ammo.hasOwnProperty(q.type)) w.ammo[q.type] += q.amount;
                 }
+
+                //console.log(w.ammo)
                 in_util = true;
             }
         }
@@ -140,7 +143,7 @@ export function updateAppendage(game, ap, delta){
             var rel_x = q.pos.x;
             var rel_y = q.pos.y;
             if (approx(rel_x - ~~(rel_x), 0.5) && approx(rel_y - ~~(rel_y), 0.5)){
-                game.quanta.splice(j, 1);
+                ap.quanta.splice(j, 1);
                 continue;
             }
 
@@ -160,7 +163,7 @@ export function updateAppendage(game, ap, delta){
                                     var pos = new Vector2D(c.target.obj.pos.x + i + 0.5, c.target.obj.pos.y);
                                     if (chip.capacity.hasOwnProperty(q.type)){
                                         //Quantum goes south into chip from north side
-                                        game.quanta.push(Quantum(pos.x, pos.y, 0, 0.01, q.type, q.amount));
+                                        ap.quanta.push(Quantum(pos.x, pos.y, 0, 0.01, q.type, q.amount));
                                         // q.pos = pos;
                                         // q.vel.x = 0;
                                         // q.vel.y = 0.01;
@@ -170,7 +173,7 @@ export function updateAppendage(game, ap, delta){
                             }
                         } else {
                             var pos = new Vector2D(c.target.obj.pos.x + 0.5, c.target.obj.pos.y);
-                            game.quanta.push(Quantum(pos.x, pos.y, 0, 0.01, q.type, q.amount));
+                            ap.quanta.push(Quantum(pos.x, pos.y, 0, 0.01, q.type, q.amount));
                         }
                     } else if (c.target.edge == "south"){
                         //Search target module's south side
@@ -181,7 +184,7 @@ export function updateAppendage(game, ap, delta){
                                     var chip = grid.obj;
                                     var pos = new Vector2D(c.target.obj.pos.x + i + 0.5, c.target.obj.pos.y + c.target.obj.height);
                                     if (chip.capacity.hasOwnProperty(q.type)){
-                                        game.quanta.push(Quantum(pos.x, pos.y, 0, -0.01, q.type, q.amount));
+                                        ap.quanta.push(Quantum(pos.x, pos.y, 0, -0.01, q.type, q.amount));
                                         //Quantum goes north into chip from south side
                                         // q.pos = pos;
                                         // q.vel.x = 0;
@@ -192,7 +195,7 @@ export function updateAppendage(game, ap, delta){
                             }
                         } else {
                             var pos = new Vector2D(c.target.obj.pos.x + 0.5, c.target.obj.pos.y + c.target.obj.height);
-                            game.quanta.push(Quantum(pos.x, pos.y, 0, -0.01, q.type, q.amount));
+                            ap.quanta.push(Quantum(pos.x, pos.y, 0, -0.01, q.type, q.amount));
                         }
                     } else if (c.target.edge == "east"){
                         if (c.target.obj.hasOwnProperty("interface")){
@@ -204,14 +207,14 @@ export function updateAppendage(game, ap, delta){
                                     var pos = new Vector2D(c.target.obj.pos.x + c.target.obj.width, c.target.obj.pos.y + i + 0.5);
                                     if (chip.capacity.hasOwnProperty(q.type)){
                                         //Quantum goes west into chip from east side
-                                        game.quanta.push(Quantum(pos.x, pos.y, -0.01, 0, q.type, q.amount));
+                                        ap.quanta.push(Quantum(pos.x, pos.y, -0.01, 0, q.type, q.amount));
                                         break;
                                     }
                                 }
                             }
                         } else {
                             var pos = new Vector2D(c.target.obj.pos.x + c.target.obj.width, c.target.obj.pos.y + 0.5);
-                            game.quanta.push(Quantum(pos.x, pos.y, -0.01, 0, q.type, q.amount));
+                            ap.quanta.push(Quantum(pos.x, pos.y, -0.01, 0, q.type, q.amount));
                         }
                     } else if (c.target.edge == "west"){
                         if (c.target.obj.hasOwnProperty("interface")){
@@ -223,14 +226,14 @@ export function updateAppendage(game, ap, delta){
                                     var pos = new Vector2D(c.target.obj.pos.x, c.target.obj.pos.y + i + 0.5);
                                     if (chip.capacity.hasOwnProperty(q.type)){
                                         //Quantum goes north into chip from south side
-                                        game.quanta.push(Quantum(pos.x, pos.y, 0.01, 0, q.type, q.amount));
+                                        ap.quanta.push(Quantum(pos.x, pos.y, 0.01, 0, q.type, q.amount));
                                         break;
                                     }
                                 }
                             }
                         } else {
                             var pos = new Vector2D(c.target.obj.pos.x, c.target.obj.pos.y + 0.5);
-                            game.quanta.push(Quantum(pos.x, pos.y, 0.01, 0, q.type, q.amount));
+                            ap.quanta.push(Quantum(pos.x, pos.y, 0.01, 0, q.type, q.amount));
                         }
                     }
                 }
@@ -239,7 +242,7 @@ export function updateAppendage(game, ap, delta){
             //Record output on edge
 
             //m.out_edge.current += q.amount;
-            game.quanta.splice(j, 1);
+            ap.quanta.splice(j, 1);
         }
         q.pos = q.pos.add(q.vel);
     }
@@ -270,7 +273,7 @@ export function updateAppendage(game, ap, delta){
                         //Generate new quantum on output edges
                         for (const type of Object.keys(chip.rates.output)){
                             var output_quantity = chip.rates.output[type];
-                            if (output_quantity > 0) game.quanta.push(Quantum(j + m.pos.x + 0.5, i + m.pos.y + 0.45, 0, -0.01, chip.output[0], output_quantity));
+                            if (output_quantity > 0) ap.quanta.push(Quantum(j + m.pos.x + 0.5, i + m.pos.y + 0.45, 0, -0.01, chip.output[0], output_quantity));
                         }
                     }
                 }
@@ -285,8 +288,32 @@ ECS.systems.update = function systemUpdate(game, delta){
         var ap = ECS.entities.appendages[key];
         updateAppendage(game, ap, delta);
     }
-    for (const proj of game.projectiles){
+    for (var i = game.projectiles.length - 1; i >= 0; i--){
+        var proj = game.projectiles[i];
         proj.update(delta);
+        if (proj.lifetime <= 0) {
+            game.explosions.push(Explosion(proj.pos.x, proj.pos.y));
+            game.projectiles.splice(i, 1);
+        } else {
+            var collided = false;
+            if (proj.owner == 0){
+                //Check for hitting opponent
+                collided = proj.collide({x:game.test_opp.pos.x, y:game.test_opp.pos.y, w: game.test_opp.torso.width, h: game.test_opp.torso.height});
+                if (collided) game.test_opp.hp -= proj.damage;
+            } else {
+                //Check for hitting player
+                collided = proj.collide({x:game.current_titan.pos.x, y:game.current_titan.pos.y, w: game.current_titan.torso.width, h: game.current_titan.torso.height});
+                if (collided) game.current_titan.hp -= proj.damage;
+            }
+            if (collided){
+                game.explosions.push(Explosion(proj.pos.x, proj.pos.y));
+                game.projectiles.splice(i, 1);
+            }
+        }
+    }
+    for (var i = game.explosions.length - 1; i >= 0; i--){
+        if (game.frame % 4 == 0) game.explosions[i].frame += 1;
+        if (game.explosions[i].frame > 15) game.explosions.splice(i, 1);
     }
 }
 
@@ -395,7 +422,7 @@ ECS.systems.render = function systemRender (game, delta) {
     //     }
     //
     //     //Quanta
-    //     for (const q of game.quanta){
+    //     for (const q of ap.quanta){
     //         blurCircle(Assets.c, q.pos.x * game.grid_width, q.pos.y * game.grid_width, game.grid_width / 16 * Math.sqrt(q.amount), q.type);
     //     }
     //     Assets.c.rotate(-ap.angle);

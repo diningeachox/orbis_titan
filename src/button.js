@@ -44,24 +44,35 @@ export var Button = function(config) {
     this.onClick = config.onClick || function() {};
     this.hover = 0;
     this.fontstyle = config.fontstyle || "buttonFont";
+    this.enabled = true;
 };
 
 Button.prototype.draw = function(ctx) {
     //Normal button
     ctx.font=this.height / 3 + "px " + this.fontstyle;
-    if (!this.hover){
-        ctx.fillStyle = this.color;
+    if (this.enabled){
+        if (!this.hover){
+            ctx.fillStyle = this.color;
+            ctx.strokeStyle = "white";
+            ctx.strokeRect(this.x - (this.width / 2), this.y - (this.height / 2), this.width, this.height);
+            ctx.fillRect(this.x - (this.width / 2), this.y - (this.height / 2), this.width, this.height);
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.fillText(this.label, this.x, this.y);
+        } else {
+            //Hovered over button
+            ctx.fillStyle = "white";
+            ctx.fillRect(this.x - (this.width / 2), this.y - (this.height / 2), this.width, this.height);
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+            ctx.fillText(this.label, this.x, this.y);
+        }
+    } else {
+        ctx.fillStyle = "gray";
         ctx.strokeStyle = "white";
         ctx.strokeRect(this.x - (this.width / 2), this.y - (this.height / 2), this.width, this.height);
         ctx.fillRect(this.x - (this.width / 2), this.y - (this.height / 2), this.width, this.height);
         ctx.fillStyle = "white";
-        ctx.textAlign = "center";
-        ctx.fillText(this.label, this.x, this.y);
-    } else {
-        //Hovered over button
-        ctx.fillStyle = "white";
-        ctx.fillRect(this.x - (this.width / 2), this.y - (this.height / 2), this.width, this.height);
-        ctx.fillStyle = "black";
         ctx.textAlign = "center";
         ctx.fillText(this.label, this.x, this.y);
     }
@@ -204,6 +215,7 @@ export class IconMenu extends StateMenu {
                 ctx.fillText(this.options[i], this.x + this.option_height, this.y + (i + 0.5) * this.option_height);
             }
             //Draw icon associated to option string
+            console.log(this.options[i])
             var img = images[this.options[i]];
             if (img.width >= img.height){
                 var ratio = (1 - img.height / img.width) / 2;

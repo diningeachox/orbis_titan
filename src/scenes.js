@@ -43,12 +43,12 @@ export class Scene {
 
   handleMouseClick(mouseX, mouseY){
       for (var i = 0; i < this.buttons.length; i++){
-          this.buttons[i].handleMouseClick(mouseX, mouseY);
+          if (this.buttons[i].enabled) this.buttons[i].handleMouseClick(mouseX, mouseY);
       }
   }
   handleMouseHover(mouseX, mouseY){
       for (var i = 0; i < this.buttons.length; i++){
-          this.buttons[i].handleMouseHover(mouseX, mouseY);
+          if (this.buttons[i].enabled) this.buttons[i].handleMouseHover(mouseX, mouseY);
       }
   }
 
@@ -184,10 +184,23 @@ export class GameScene extends Scene {
     }
     update(delta) {
         this.game.update(delta);
+        if (this.game.battle){
+            //Disable all the buttons
+            for (var i = 0; i < this.buttons.length; i++){
+                this.buttons[i].enabled = false;
+            }
+        }
+        if (!this.game.battle){
+            //Disable all the buttons
+            for (var i = 0; i < this.buttons.length; i++){
+                this.buttons[i].enabled = true;
+            }
+        }
     }
     render(delta){
 
         c.clearRect(0, 0, canvas.width, canvas.height);
+        //ol.clearRect(0, 0, overlay.width, overlay.height);
         this.game.render(delta);
         //Buttons
         if (!this.game.battle){
@@ -269,6 +282,87 @@ export class Ins extends Scene {
         c.fillStyle = "white";
         c.textAlign = "center";
         c.fillText("credits", canvas.width/2, 100);
+
+        for (var i = 0; i < this.buttons.length; i++){
+            this.buttons[i].draw(c);
+        }
+    }
+    unload(){
+    }
+}
+
+export class End extends Scene {
+    constructor(game){
+      super();
+      this.name = "end";
+      this.game = game;
+      //Buttons
+
+     var menu_button = new Button({x: canvas.width / 2, y:canvas.height - 100, width:150, height:50, label:"Back to Menu",
+           onClick: function(){
+               Assets.gl.width = window.innerWidth / 2;
+               Assets.gl.height = window.innerHeight / 2;
+               Assets.gl.style.left = (window.innerWidth / 4) + "px";
+               Assets.gl.style.top = (window.innerHeight / 4) + "px";
+               Game.renderer.resize();
+               Game.renderer.camera.px = 3,
+               Game.renderer.camera.py = 3,
+               Game.renderer.camera.pz = 25,
+               Game.game.battle = false;
+               //Reset titans
+               Game.game.current_titan.hp = 500;
+               Game.game.test_opp.hp = 500;
+               changeScene(Game.game_scene);
+               playSound(sfx_sources["button_click"].src, sfx_ctx);
+           }
+          });
+      this.buttons = [menu_button];
+    }
+    update(delta) {
+      frame++;
+    }
+    render(delta){
+        c.clearRect(0, 0, canvas.width, canvas.height);
+
+        var img = images["victory"];
+        if (this.game.result == 0) img = images["defeat"];
+
+        c.drawImage(img, (canvas.width - canvas.height) / 2, 0, canvas.height, canvas.height);
+        var r = (canvas.width - canvas.height) / (2 * canvas.width);
+        var gradient = c.createLinearGradient(0, 0, canvas.width, 0);
+        // Add three color stops
+        gradient.addColorStop(0, "rgba(0, 0, 0, 1.0)");
+        gradient.addColorStop(r, "rgba(0, 0, 0, 1.0)");
+        gradient.addColorStop(0.5, "rgba(0, 0, 0, "+ (Math.sin(frame / 40) * 0.1 + 0.1) +")");
+        gradient.addColorStop(1 - r, "rgba(0, 0, 0, 1.0)");
+        gradient.addColorStop(1, "rgba(0, 0, 0, 1.0)");
+        c.fillStyle = gradient;
+        c.fillRect(0, 0, canvas.width, canvas.height);
+
+        gradient = c.createLinearGradient(0, 0, (canvas.width - canvas.height) / 2 + 10, 0);
+        // Add three color stops
+        gradient.addColorStop(0, "rgba(0, 0, 0, 0.0)");
+        gradient.addColorStop(1, "rgba(0, 0, 0, 1.0)");
+        c.fillStyle = gradient;
+        c.fillRect(0, 0, (canvas.width - canvas.height) / 2, canvas.height);
+
+        gradient = c.createLinearGradient(canvas.width - (canvas.width - canvas.height) / 2 - 10, 0, canvas.width, 0);
+        // Add three color stops
+        gradient.addColorStop(0, "rgba(0, 0, 0, 1.0)");
+        gradient.addColorStop(1, "rgba(0, 0, 0, 0.0)");
+        c.fillStyle = gradient;
+        c.fillRect(canvas.width - (canvas.width - canvas.height) / 2, 0, (canvas.width - canvas.height) / 2, canvas.height);
+
+
+        //c.drawImage(img, 0, 0, canvas.height, canvas.height);
+        //title
+        c.font="70px titleFont";
+        c.fillStyle = "white";
+        c.textAlign = "center";
+
+        var text = "victory";
+        if (this.game.result == 0) text = "defeat";
+        c.fillText(text, canvas.width/2, 100);
 
         for (var i = 0; i < this.buttons.length; i++){
             this.buttons[i].draw(c);

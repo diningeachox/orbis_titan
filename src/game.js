@@ -1,9 +1,8 @@
 import * as Scene from './scenes.js';
 import * as Assets from './assets.js';
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.135.0/build/three.module.js';
 
 import {Module, Connector, Weapon, Joint, Sink, Mainframe, createModuleImage} from "./gameObjects/module.js";
-import {Cell, Router, Grid} from "./gameObjects/cell.js";
+import {Cell, Router, Grid, createChipImage} from "./gameObjects/cell.js";
 import {Shell, Appendage, Torso, createAppendageImage} from "./gameObjects/appendage.js";
 import {Titan, draw_appendage_gl, draw_titan} from "./gameObjects/titan.js";
 import {Battery} from "./gameObjects/battery.js";
@@ -14,10 +13,11 @@ import {BattleScene} from "./subscenes/battle_scene.js";
 import {MarketScene} from "./subscenes/market_scene.js";
 import {copyObject} from "./utils.js";
 
-import {P1, P2} from "./projectile.js";
+import {Explosion, P1, P2} from "./projectile.js";
 
 import {GL_Renderer} from "./renderer/gl_renderer.js";
 
+import chip_data from '../../presets/chips.json' assert { type: 'json' };
 import module_data from '../presets/modules.json' assert { type: 'json' };
 import weapon_data from '../presets/weapons.json' assert { type: 'json' };
 import appendage_data from '../presets/appendages.json' assert { type: 'json' };
@@ -43,7 +43,7 @@ export var game;
 export var game_scene;
 export var ins_scene;
 export var menu;
-
+export var end_scene;
 //SUbscenes
 export var build_scene;
 export var battle_scene;
@@ -76,23 +76,36 @@ export function init(){
     //Draw/Load images of gameobjects
 
     //Chips
+    for (const chip of Object.keys(chip_data)){
+        createChipImage(chip_data[chip]);
+        ECS.blueprints.chips[chip] = chip_data[chip];
+    }
 
     //Modules
     for (const mod of Object.keys(module_data)){
         createModuleImage(module_data[mod]);
+        ECS.blueprints.modules[mod] = module_data[mod];
     }
 
     //Appendages
+    for (const ap of Object.keys(appendage_data)){
+        createAppendageImage(appendage_data[ap], 80);
+        if (appendage_data[ap].torso == false) ECS.blueprints.appendages[ap] = appendage_data[ap];
+    }
+
+
     renderer = new GL_Renderer(Assets.gl);
     renderer.loadTextures(images);
 
     sm = new Scene.SceneManager();
     menu = new Scene.Menu();
 
+
     sm.cur_scene = menu;
     game = new Game();
     game_scene = new Scene.GameScene(game);
     ins_scene = new Scene.Ins();
+    end_scene = new Scene.End(game);
 
     build_scene = new BuildScene();
     battle_scene = new BattleScene();
@@ -219,6 +232,8 @@ class Game {
     constructor(){
         this.score = 0;
         this.frame = 0;
+
+        this.result = -1;
         //Assets.SpriteFactory('../sprites/ship1.png', 0);
         //Assets.SpriteFactory('../sprites/ship1.png', 1);
 
@@ -267,7 +282,7 @@ class Game {
         //var test_module_1 = ModuleFactory();
         var testm = module_data["testm"];
         var testm2 = module_data["testm2"];
-        console.log(testm)
+
         ECS.entities.modules["testm"] = testm;
         ECS.entities.modules["testm2"] = testm2;
 
@@ -278,8 +293,8 @@ class Game {
         ECS.entities.utilities["Energy Sink"] = Sink(0, 0);
         ECS.entities.utilities["Joint"] = Joint(0, 0);
 
-        ECS.blueprints.modules["testm"] = testm;
-        ECS.blueprints.modules["testm2"] = testm2;
+        //ECS.blueprints.modules["testm"] = testm;
+        //ECS.blueprints.modules["testm2"] = testm2;
 
         ECS.blueprints.weapons["gun"] = Weapon(weapon_data["gun"]);
         ECS.blueprints.weapons["laser"] = Weapon(weapon_data["laser"]);
@@ -305,12 +320,12 @@ class Game {
         //Create 4 legs with 2 joints each
         var children = [];
         for (var i = 0; i < 4; i++){
-            var test_appendage_config = {"width": 20, "height": 7, "shell": [],
-                                        "modules": [testm, testm2], "weapons": test_weapons,
-                                        "batteries": this.batteries, "connectors": test_connectors,
-                                        "joints": [Joint(19, 2), Joint(0, 2)], "sinks": test_sinks,
-                                        "children": [], "pos": {x:0, y:0}};
-            var test_appendage = copyObject(appendage_data["test_ap"]);
+            // var test_appendage_config = {"width": 20, "height": 7, "shell": [],
+            //                             "modules": [testm, testm2], "weapons": test_weapons,
+            //                             "batteries": this.batteries, "connectors": test_connectors,
+            //                             "joints": [Joint(19, 2), Joint(0, 2)], "sinks": test_sinks,
+            //                             "children": [], "pos": {x:0, y:0}};
+            var test_appendage = copyObject(appendage_data["arm"]);
             //var test_appendage = Appendage(test_appendage_config);
             console.log(JSON.stringify(test_appendage));
             //var test_appendage_2 = Object.assign({}, test_appendage);
@@ -322,7 +337,7 @@ class Game {
             console.log(test_appendage.children)
             ECS.entities.appendages[test_appendage.id] = test_appendage;
             ECS.entities.appendages[test_appendage_2.id] = test_appendage_2;
-            ECS.blueprints.appendages[test_appendage.id] = test_appendage;
+            //ECS.blueprints.appendages[test_appendage.id] = test_appendage;
             //Create appendage images for building
             createAppendageImage(test_appendage, 80);
             children.push(test_appendage.id);
@@ -356,12 +371,48 @@ class Game {
         this.titans = {};
 
         this.projectiles = [];
-        this.projectiles.push(P1({x:0, y:0, dir: new Vector2D(0.1, 1), color: [1.0, 1.0, 0.0], owner:0}));
-        this.projectiles.push(P1({x:3, y:-3, dir: new Vector2D(0.1, -1), color: [1.0, 1.0, 1.0], owner:0}));
-        this.projectiles.push(P2({x:5, y:-1, dir: new Vector2D(-0.5, -0.1), color: [0.5, 0.5, 1.0], owner:0}));
+        // this.projectiles.push(P1({x:0, y:0, dir: new Vector2D(0.1, 1), color: [1.0, 1.0, 0.0], owner:0}));
+        // this.projectiles.push(P1({x:3, y:-3, dir: new Vector2D(0.1, -1), color: [1.0, 1.0, 1.0], owner:0}));
+        // this.projectiles.push(P2({x:5, y:-1, dir: new Vector2D(-0.5, -0.1), color: [0.5, 0.5, 1.0], owner:0}));
 
-        var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": test_torso};
+        this.explosions = [];
+        this.explosions.push(Explosion(1, -5));
+        this.explosions.push(Explosion(5, -4));
+
+        var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": test_torso, "id": 0, "hp": 500};
         var test_titan = new Titan(test_titan_config);
+
+        //Make a deep copy of original titan
+        var copy_children = [];
+        for (var i = 0; i < 4; i++){
+            var copy_test_appendage = copyObject(appendage_data["arm"]);
+            var copy_test_appendage_2 = copyObject(copy_test_appendage);
+            copy_test_appendage.angle = -Math.PI / 6 * i;
+            copy_test_appendage_2.angle = Math.PI / 6;
+            if (i > 1) copy_test_appendage.angle = Math.PI;
+            copy_test_appendage.children.push(copy_test_appendage_2.id);
+            console.log(test_appendage.children)
+            ECS.entities.appendages[copy_test_appendage.id] = copy_test_appendage;
+            ECS.entities.appendages[copy_test_appendage_2.id] = copy_test_appendage_2;
+            //Create appendage images for building
+            createAppendageImage(copy_test_appendage, 80);
+            copy_children.push(copy_test_appendage.id);
+
+        }
+        var copy_torso_config = {"width": 20, "height": 20, "shell": [],
+                                      "modules": [testm, testm2], "weapons": test_weapons,
+                                      "batteries": this.batteries, "connectors": test_connectors,
+                                      "joints": [Joint(19, 17), Joint(19, 2), Joint(0, 2), Joint(0, 17)], "sinks": test_sinks,
+                                      "children": copy_children, "pos": {x:-0, y: -0}};
+        var copy_torso = Torso(copy_torso_config);
+
+        var test_opp_config = {"pos": new Vector2D(90, 35), "appendages": [copy_test_appendage, copy_test_appendage_2], "torso": copyObject(copy_torso), "id": 1, "hp": 500};
+        this.test_opp = new Titan(test_opp_config);
+        //Set initial destination
+        var dest = new Vector2D(135, 40);
+        var dir = dest.subtract(this.test_opp.pos);
+        this.test_opp.destination = dest;
+        this.test_opp.setNewTargets(dir, 5);
 
         this.current_titan = test_titan;
         console.log(test_titan)
@@ -386,26 +437,36 @@ class Game {
 
 
         if (this.battle){
+            if (this.result == -1){
+                renderer.updateCamera(delta);
+                const bcr = Assets.gl.getBoundingClientRect();
+                renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
+                if (flags['left_down'] == 1) {
+                    //Set new destination for titan
+                    if (this.current_titan != null){
+                        var dest = new Vector2D(renderer.selected_coords.x, -renderer.selected_coords.y);
+                        var dir = dest.subtract(this.current_titan.pos);
 
-            renderer.updateCamera(delta);
-            const bcr = Assets.gl.getBoundingClientRect();
-            renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
-            if (flags['left_down'] == 1) {
-                //Set new destination for titan
-                if (this.current_titan != null){
-                    var dest = new Vector2D(renderer.selected_coords.x, -renderer.selected_coords.y);
-                    var dir = dest.subtract(this.current_titan.pos);
-
-                    //debugger;
-                    this.current_titan.destination = dest;
-                    this.current_titan.setNewTargets(dir, 5);
+                        //debugger;
+                        this.current_titan.destination = dest;
+                        this.current_titan.setNewTargets(dir, 5);
+                    }
                 }
-            }
 
-            //test
-            renderer.drawLineStrips(0, 0, [0.0, 0.0, 2.0, 2.0,   2.0, 2.0, 3.0, 10.0], [1.0, 0.0, 1.0]);
-            this.current_titan.update(delta);
-            ECS.systems.update(this, delta);
+                //test
+                renderer.drawLineStrips(0, 0, [0.0, 0.0, 2.0, 2.0,   2.0, 2.0, 3.0, 10.0], [1.0, 0.0, 1.0]);
+                this.current_titan.update(this, delta);
+                this.test_opp.update(this, delta);
+                ECS.systems.update(this, delta);
+
+                if (this.current_titan.hp <= 0){
+                    this.result = 0; //Loss
+                } else if (this.test_opp.hp <= 0){
+                    this.result = 1; //Win
+                }
+            } else {
+                Scene.changeScene(end_scene);
+            }
         }
 
         //GL renderer updates
@@ -428,21 +489,26 @@ class Game {
             c.fillStyle = gradient;
             c.fillRect(0, 0, canvas.width, canvas.height);
         } else {
+            //Battle mode
             renderer.render(this);
             //debugger;
             //Background arena
             renderer.drawSprite("arena", -100, 100, 300, 300, 0, -0.1);
             if (this.current_titan != null){
+                //Draw titan
                 draw_titan(renderer, this.current_titan.torso, this.current_titan.pos, this.current_titan.pos, 0, this);
+                //Draw opponent
+                draw_titan(renderer, this.test_opp.torso, this.test_opp.pos, this.test_opp.pos, 0, this);
 
                 //Debug mode
                 // var body = game.current_titan;
-                // for (var i = 0; i < body.targets.length; i++){
-                //     renderer.drawRect(body.targets[i].x, -body.targets[i].y, 2, 2, [1.0, 1.0, 0.0], 1.0);
-                //     //Old positions
-                //     renderer.drawRect(body.old_foot_pos[i].x, -body.old_foot_pos[i].y, 2, 2, [0.0, 1.0, 0.0], 1.0);
-                // }
-                // renderer.drawRect(body.pos.x - 1, -body.pos.y + 1, 2, 2, [1.0, 0.0, 0.0], 1.0);
+                var body = game.test_opp;
+                for (var i = 0; i < body.targets.length; i++){
+                    renderer.drawRect(body.targets[i].x, -body.targets[i].y, 2, 2, [1.0, 1.0, 0.0], 1.0);
+                    //Old positions
+                    renderer.drawRect(body.old_foot_pos[i].x, -body.old_foot_pos[i].y, 2, 2, [0.0, 1.0, 0.0], 1.0);
+                }
+                renderer.drawRect(body.pos.x - 1, -body.pos.y + 1, 2, 2, [1.0, 0.0, 0.0], 1.0);
             }
             if (flags['left_down'] == 1){
 
@@ -453,10 +519,35 @@ class Game {
 
             //Render projectiles (in front of the appendages)
             for (const proj of this.projectiles){
-                //debugger;
-                console.log(proj.pos.x, proj.pos.y)
-                renderer.drawRect(proj.pos.x, proj.pos.y, proj.size, proj.size, proj.color, 1.0, 0.0, 2.5);
+                renderer.drawRect(proj.pos.x, -proj.pos.y, proj.size, proj.size, proj.color, 1.0, 0.0, 2.5);
             }
+
+            //Render explosions
+            for (var i = game.explosions.length - 1; i >= 0; i--){
+                var expl = game.explosions[i];
+                if (expl.frame <= 15) renderer.drawSprite("exp"+expl.frame, expl.x - 0.5, -(expl.y + 0.5), 2, 2, 0.0, 2.0);
+            }
+
+            //HP and stats
+            //Player HP topleft
+            ol.fillStyle = "rgba(0, 0, 0, 0.8)";
+            ol.fillRect(0, 0, overlay.width, 100);
+
+            ol.font="25px statFont";
+            ol.strokeStyle = "red";
+            ol.fillStyle = "red";
+            ol.lineWidth = 3;
+            ol.fillText("HEALTH", 25, 25, 70, 12);
+            ol.fillText(this.current_titan.hp + "\/500", 150, 25, 100, 12);
+            ol.strokeRect(25, 35, (overlay.width / 2 - 100) + 12, 52); //Border
+            ol.fillRect(31, 41, (overlay.width / 2 - 100) * (this.current_titan.hp / 500), 40);
+
+            ol.strokeStyle = "#89cff0";
+            ol.fillStyle = "#89cff0";
+            ol.fillText("HEALTH", overlay.width - 75, 25, 70, 12);
+            ol.fillText(this.test_opp.hp + "\/500", overlay.width - 200, 25, 100, 12);
+            ol.strokeRect(overlay.width - ((overlay.width / 2 - 100) + 12) - 25, 35, (overlay.width / 2 - 100) + 12, 52); //Border
+            ol.fillRect(overlay.width - (overlay.width / 2 - 100) - 31, 41, (overlay.width / 2 - 100) * (this.test_opp.hp / 500), 40);
         }
     }
 }

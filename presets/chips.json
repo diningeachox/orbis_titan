@@ -1,3 +1,10 @@
 {
-  
+    "vital-maker":
+        {"str":"xooxi322i332xiix","storage":{"gravitum":0,"aquam":0},"capacity":{"gravitum":3,"aquam":3},"inputs":{},"output":["vitalium"],"rates":{"input":{"west":2,"north":0,"east":0,"south":2},"output":{"west":0,"north":2,"east":0,"south":0}},"name":"vital-maker","pos":{"x":0,"y":0},"orientation":0,"sprite":null,"type":"chip"},
+    "fort-maker":
+        {"str":"xooxi11ii33ixiix","storage":{"photum":0,"gravitum":0},"capacity":{"photum":2,"gravitum":2},"inputs":{},"output":["fortinium"],"rates":{"input":{"west":2,"north":0,"east":2,"south":2},"output":{"west":0,"north":2,"east":0,"south":0}},"name":"fort-maker","pos":{"x":0,"y":0},"orientation":0,"sprite":null,"type":"chip"},
+    "plas-maker":
+        {"str":"xoox933i993ixiix","storage":{"aetherium":0,"gravitum":0},"capacity":{"aetherium":3,"gravitum":3},"inputs":{},"output":["plasmium"],"rates":{"input":{"west":0,"north":0,"east":2,"south":2},"output":{"west":0,"north":2,"east":0,"south":0}},"name":"plas-maker","pos":{"x":0,"y":0},"orientation":0,"sprite":null,"type":"chip"},
+    "rapid-maker":
+        {"str":"xooxi22ii99ixiix","storage":{"aquam":0,"aetherium":0},"capacity":{"aquam":2,"aetherium":2},"inputs":{},"output":["rapidum"],"rates":{"input":{"west":2,"north":0,"east":2,"south":2},"output":{"west":0,"north":2,"east":0,"south":0}},"name":"rapid-maker","pos":{"x":0,"y":0},"orientation":0,"sprite":null,"type":"chip"}
 }

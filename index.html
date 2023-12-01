@@ -161,7 +161,24 @@
         "menu": "sprites/menu.jpg",
         "arena": "sprites/arena.jpg",
         "vs": "sprites/vs.png",
+
+        //Ending screens
+        "victory": "sprites/victory.jpg",
+        "defeat": "sprites/defeat.jpg",
+
+        //Mech icons
+        "p1": "sprites/p1.png",
+        "p2": "sprites/p2.png",
+
     };
+    for (var i = 0; i < 16; i++){
+        if (i < 10){
+            arr["exp" + i] = "sprites/explosion_sprite/tile00" + i + ".png";
+        } else {
+            arr["exp" + i] = "sprites/explosion_sprite/tile0" + i + ".png";
+        }
+
+    }
     // Scene manager
     var sm;
 
@@ -211,6 +228,13 @@ function loadFonts(){
     //fonts
     var dialogFont = new FontFace('dialogFont', 'url(./fonts/Jost-500-Medium.otf)');
     dialogFont.load().then(function(font){
+      // with canvas, if this is ommited won't work
+      document.fonts.add(font);
+      console.log('Dialog Font loaded');
+    });
+
+    var statFont = new FontFace('statFont', 'url(./fonts/ARCADE.TTF)');
+    statFont.load().then(function(font){
       // with canvas, if this is ommited won't work
       document.fonts.add(font);
       console.log('Dialog Font loaded');

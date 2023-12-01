@@ -38,6 +38,7 @@ export class BattleScene extends Scene {
      var battle_button = new Button({x: canvas.width / 2 + 300, y:canvas.height - 100, width:300, height:100, label:"Start Battle",
            onClick: function(){
                game.battle = true;
+               game.result = -1;
                Assets.gl.width = window.innerWidth;
                Assets.gl.height = window.innerHeight;
                Assets.gl.style.left = "0px";
@@ -54,41 +55,17 @@ export class BattleScene extends Scene {
     }
     render(delta){
         c.clearRect(0, 0, canvas.width, canvas.height);
-
-        //var img = images["title"];
-        //c.drawImage(img, (canvas.width - canvas.height) / 2, 0, canvas.height, canvas.height);
-        var r = (canvas.width - canvas.height) / (2 * canvas.width);
-        var gradient = c.createLinearGradient(0, 0, canvas.width, 0);
-        // Add three color stops
-        gradient.addColorStop(0, "rgba(0, 0, 0, 1.0)");
-        gradient.addColorStop(r, "rgba(0, 0, 0, 1.0)");
-        gradient.addColorStop(0.5, "rgba(0, 0, 0, "+ (Math.sin(this.frame / 40) * 0.1 + 0.1) +")");
-        gradient.addColorStop(1 - r, "rgba(0, 0, 0, 1.0)");
-        gradient.addColorStop(1, "rgba(0, 0, 0, 1.0)");
-        c.fillStyle = gradient;
+        c.fillStyle = "black";
         c.fillRect(0, 0, canvas.width, canvas.height);
 
-        gradient = c.createLinearGradient(0, 0, (canvas.width - canvas.height) / 2 + 10, 0);
-        // Add three color stops
-        gradient.addColorStop(0, "rgba(0, 0, 0, 0.0)");
-        gradient.addColorStop(1, "rgba(0, 0, 0, 1.0)");
-        c.fillStyle = gradient;
-        c.fillRect(0, 0, (canvas.width - canvas.height) / 2, canvas.height);
-
-        gradient = c.createLinearGradient(canvas.width - (canvas.width - canvas.height) / 2 - 10, 0, canvas.width, 0);
-        // Add three color stops
-        gradient.addColorStop(0, "rgba(0, 0, 0, 1.0)");
-        gradient.addColorStop(1, "rgba(0, 0, 0, 0.0)");
-        c.fillStyle = gradient;
-        c.fillRect(canvas.width - (canvas.width - canvas.height) / 2, 0, (canvas.width - canvas.height) / 2, canvas.height);
-
-
-        //c.drawImage(img, 0, 0, canvas.height, canvas.height);
+        c.drawImage(images["p1"], 0, canvas.height / 4, canvas.width / 3, canvas.height / 2);
+        c.drawImage(images["p2"], 2 * canvas.width / 3, canvas.height / 4, canvas.width / 3, canvas.height / 2);
+        
         //title
         c.font="70px titleFont";
         c.fillStyle = "white";
         c.textAlign = "center";
-        c.fillText("choose your mech", canvas.width/2, 100);
+        c.fillText("upcoming matchup", canvas.width/2, 100);
 
         c.drawImage(images["vs"], canvas.width/2 - 200, canvas.height/2 - 200, 400, 400);
 

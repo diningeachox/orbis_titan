@@ -1,5 +1,5 @@
 import {plain_vs, plain_fs} from "../../shaders/texture.js";
-import {simple_vs, simple_fs, more_simple_fs, more_simple_vs} from "../../shaders/simple.js";
+import {simple_vs, simple_fs, more_simple_fs, more_simple_vs, simple_circle_fs} from "../../shaders/simple.js";
 import {plane_vert, plane_ind, plane_col, plane_norm, plane_texcoord} from "./constants.js";
 import {loadTexture, genTexture} from "./texture_utils.js";
 import {translate, rotateX, rotateY, rotateZ, scale, invert, transpose, multiply, mmv} from "./ops.js";
@@ -44,6 +44,7 @@ export class GL_Renderer {
         this.initShader("plain", plain_vs, plain_fs); //Shaders
         this.initShader("simple", simple_vs, simple_fs); //Shaders
         this.initShader("more_simple", more_simple_vs, more_simple_fs); //Shaders
+        this.initShader("simple_circle", more_simple_vs, simple_circle_fs); //Shaders
         this.cur_shader = null;
         //this.setupUniforms();
 
@@ -114,26 +115,32 @@ export class GL_Renderer {
     setupObjects(){
 
         //Create VBOs
+
+        //Same for all objects
         this.texcoordBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texcoordBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(plane_texcoord), this.gl.STATIC_DRAW);
 
         this.vertex_buffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertex_buffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(plane_vert), this.gl.DYNAMIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(plane_vert), this.gl.STATIC_DRAW);
 
 
+        this.normal_buffer = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.normal_buffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(plane_norm), this.gl.STATIC_DRAW);
+
+        this.index_buffer = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.index_buffer);
+        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(plane_ind), this.gl.STATIC_DRAW);
+
+        //Could be different
         this.color_buffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.color_buffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(plane_col), this.gl.DYNAMIC_DRAW);
 
-        this.normal_buffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.normal_buffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(plane_norm), this.gl.DYNAMIC_DRAW);
 
-        this.index_buffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.index_buffer);
-        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(plane_ind), this.gl.DYNAMIC_DRAW);
+
 
     }
 
@@ -223,7 +230,7 @@ export class GL_Renderer {
         //this.gl.depthRange(0.0, 1.0);
 
         this.gl.viewport(0.0, 0.0, this.canv.width, this.canv.height);
-        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        this.gl.clearColor(0.3, 0.3, 0.3, 1.0);
         this.gl.clearDepth(1.0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
@@ -334,6 +341,55 @@ export class GL_Renderer {
         //this.matrixStack.restore();
     }
 
+    drawCircle(x, y, r, colour, alpha, angle=0, depth=0){
+        //this.refreshScene();
+        this.gl.useProgram(this.shaders["simple_circle"]); //Use the simple shader (for simple shapes)
+        this.cur_shader = this.shaders["simple_circle"];
+        //Attributes
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertex_buffer);
+        var _position = this.gl.getAttribLocation(this.shaders["simple_circle"], "position");
+        this.gl.vertexAttribPointer(_position, 3, this.gl.FLOAT, false,0,0);
+        this.gl.enableVertexAttribArray(_position);
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.color_buffer);
+        var _color = this.gl.getAttribLocation(this.shaders["simple_circle"], "color");
+        this.gl.vertexAttribPointer(_color, 3, this.gl.FLOAT, false,0,0) ;
+        this.gl.enableVertexAttribArray(_color);
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.normal_buffer);
+        var _normal = this.gl.getAttribLocation(this.shaders["simple_circle"], "normal");
+        this.gl.vertexAttribPointer(_normal, 3, this.gl.FLOAT, false,0,0) ;
+        this.gl.enableVertexAttribArray(_normal);
+
+        //Uniforms
+        var _light = this.gl.getUniformLocation(this.shaders["simple_circle"], "light");
+        var _viewPos = this.gl.getUniformLocation(this.shaders["simple_circle"], "viewPos");
+        var _alpha = this.gl.getUniformLocation(this.shaders["simple_circle"], "alpha");
+        //Attributes
+
+        //Lighting
+        this.gl.uniform3fv(_light, [0, 0, 20]);
+        this.gl.uniform3fv(_viewPos, [this.camera.px, this.camera.py, this.camera.pz]);
+        this.gl.uniform1f(_alpha, alpha);
+        this.mo_matrix = [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
+
+        //Multiply with top of the matrixstack
+        //this.matrixStack.save();
+        //this.matrixStack.translate(x, y, 0);
+        //this.matrixStack.rotateZ(angle);
+
+
+
+
+        scale(this.mo_matrix, [r, r, 1]);
+        translate(this.mo_matrix, [x, y, depth]);
+        rotateZ(this.mo_matrix, angle);
+        multiply(this.mo_matrix, this.matrixStack.getCurrentMatrix(), this.mo_matrix);
+        this.draw(plane_vert, plane_ind, plane_norm, colour);
+
+        //this.matrixStack.restore();
+    }
+
     drawLineStrips(x, y, points, colour, angle=0, depth=0.0){
         this.gl.useProgram(this.shaders["more_simple"]); //Use the simple shader (for simple shapes)
         this.cur_shader = this.shaders["more_simple"];
@@ -386,16 +442,13 @@ export class GL_Renderer {
     }
     draw(v, i, n, col=[1.0, 1.0, 1.0]){
 
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertex_buffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(v));
-
         this.n_matrix = [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
         var new_c = new Array(~~(v.length / 3)).fill([col[0], col[1], col[2]]).flat();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.color_buffer);
         this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(new_c));
 
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.normal_buffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(n));
+        // this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.normal_buffer);
+        // this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, new Float32Array(n));
 
         //this.gl.useProgram(this.shaders["plain"]);
         //Set uniforms
@@ -412,9 +465,6 @@ export class GL_Renderer {
         this.gl.uniformMatrix4fv(_Vmatrix, false, this.view_matrix);
         this.gl.uniformMatrix4fv(_Mmatrix, false, this.mo_matrix);
         this.gl.uniformMatrix4fv(_Nmatrix, false, this.n_matrix);
-
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.index_buffer);
-        this.gl.bufferSubData(this.gl.ELEMENT_ARRAY_BUFFER, 0, new Uint16Array(i));
 
         this.gl.drawElements(this.gl.TRIANGLES, i.length, this.gl.UNSIGNED_SHORT, 0);
     }
