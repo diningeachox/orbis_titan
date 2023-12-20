@@ -215,7 +215,7 @@ export class IconMenu extends StateMenu {
                 ctx.fillText(this.options[i], this.x + this.option_height, this.y + (i + 0.5) * this.option_height);
             }
             //Draw icon associated to option string
-            console.log(this.options[i])
+            //console.log(this.options[i])
             var img = images[this.options[i]];
             if (img.width >= img.height){
                 var ratio = (1 - img.height / img.width) / 2;

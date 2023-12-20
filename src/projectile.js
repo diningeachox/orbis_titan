@@ -6,7 +6,7 @@ class Projectile {
         this.target = null;
         this.homing = false;
         this.speed = config.speed;
-        this.lifetime = 400;
+        this.lifetime = config.lifetime;
         this.owner = config.owner;
         this.dir = config.dir.normalize();
         this.size = config.size;
@@ -61,5 +61,6 @@ class Laser {
 
 export const Explosion = (x, y) => {return {x:x, y:y, frame: 0}};
 
-export const P1 = (config) => {return new Projectile({x:config.x, y:config.y, dir: config.dir, color: config.color, speed:0.2, owner:config.owner, size: 0.4, damage:10, type:"CON"})};
-export const P2 = (config) => {return new Projectile({x:config.x, y:config.y, dir: config.dir, color: config.color, speed:0.05, owner:config.owner, size: 0.8, damage:25, type:"CON"})};
+export const P1 = (config) => {return new Projectile({x:config.x, y:config.y, dir: config.dir, color: config.color, lifetime: 400, speed:0.2, owner:config.owner, size: 0.4, damage:10, type:"CON"})};
+export const P2 = (config) => {return new Projectile({x:config.x, y:config.y, dir: config.dir, color: config.color, lifetime: 600, speed:0.05, owner:config.owner, size: 0.8, damage:25, type:"CON"})};
+export const P3 = (config) => {return new Projectile({x:config.x, y:config.y, dir: config.dir, color: config.color, lifetime: 600, speed:0.05, owner:config.owner, size: 0.8, damage:25, type:"CON"})};

@@ -76,15 +76,24 @@ export class Menu extends Scene {
             onClick: function(){
                 changeScene(Game.game_scene);
                 playSound(sfx_sources["button_click"].src, sfx_ctx);
+                music_player.setBuffer(music_sources["main"]);
+                music_player.play(true);
             }
            });
+     var cont_button = new Button({x: canvas.width / 2, y:canvas.height - 350, width:150, height:50, label:"Continue",
+           onClick: function(){
+               changeScene(Game.ins_scene);
+               playSound(sfx_sources["button_click"].src, sfx_ctx);
+           }
+         });
+      cont_button.enabled = false;
       var ins_button = new Button({x: canvas.width / 2, y:canvas.height - 150, width:150, height:50, label:"Credits",
             onClick: function(){
                 changeScene(Game.ins_scene);
                 playSound(sfx_sources["button_click"].src, sfx_ctx);
             }
           });
-      this.buttons = [play_button];
+      this.buttons = [play_button, cont_button];
       this.frame = 0;
     }
     update(delta) {frame++;}
@@ -216,11 +225,10 @@ export class GameScene extends Scene {
         super.load();
         overlay.style.zIndex = 4;
         //gl.style.zIndex = 8;
-        music_player.setBuffer(music_sources["main"]);
-        music_player.play(true);
     }
     unload(){
         //this.game = null;
+        //music_player.stop();
     }
 }
 
@@ -243,6 +251,8 @@ export class Ins extends Scene {
            onClick: function(){
                changeScene(Game.game_scene);
                playSound(sfx_sources["button_click"].src, sfx_ctx);
+
+
            }
           });
       this.buttons = [menu_button];

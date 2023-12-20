@@ -4,7 +4,7 @@ import {Shell, Appendage} from "./appendage.js";
 import {Vector2D} from "../vector2D.js";
 import {Bone, FK, isFootGrounded, groundToggle, chainLength} from "../kinematics/bone.js";
 import {resource_colours, formulas, keys, char_keys} from "./resource.js";
-import {isNum, uuidv4, set_difference, shuffle, rgba2dec} from "../utils.js";
+import {isNum, uuidv4, set_difference, shuffle, rgba2dec, Stack} from "../utils.js";
 import {Explosion, P1, P2} from "../projectile.js";
 
 export function blurCircle(ctx, x, y, radius, type, energy=false){
@@ -35,7 +35,7 @@ export class Titan {
         this.chain_speed = 0.15;
         this.min_grounded_feet = 2;
         this.appendages = config.appendages;
-        this.hp = config.hp;
+        this.hp = config.hp || 500;
 
         this.id = config.id; // 0 - Player, 1 - Opponent
         //this.num_legs = config.appendages.length;
@@ -53,7 +53,70 @@ export class Titan {
         this.torso = config.torso;
         this.num_legs = config.torso.children.length;
         //this.num_legs = 2;
+        //this.load();
 
+        //this.placeBones();
+    }
+
+    placeBones(){
+        var bonestack = new Stack();
+        for (var i = 0; i < this.torso.joints.length; i++){
+            //Root bone/joint (0, 0, 0) right at center position
+
+
+            var joint = this.torso.joints[i];
+            if (joint.partner != null){
+                debugger;
+                var leg = ECS.entities.appendages[this.torso.children[joint.partner[0]]];
+                var cur_ap = leg;
+                var accum_pos = new Vector2D(leg.width, 0);
+
+                //var rootJoint = new Vector2D(this.torso.width / 2 * Math.cos(i * 2 * Math.PI / this.num_legs), this.torso.width / 2 * Math.sin(i * 2 * Math.PI / this.num_legs));
+                var rootJoint = new Vector2D(joint.pos.x + 1, joint.pos.y + 1);
+                var rootBone = new Bone(rootJoint, leg.angle, leg.width, leg.height, null);
+                var curBone = rootBone;
+                while (cur_ap.children.length > 0){
+                    var calf = ECS.entities.appendages[leg.children[0]];
+
+                    var joint_pos = joint.partner[1];
+                    var cur_joint = calf.joints[0];
+                    //Compare the two joints of appendage, the next joint is the one whose position is not equal to joint.partner[1]
+                    if (calf.joints[0].pos.x == joint_pos.x && calf.joints[0].pos.y == joint_pos.y){
+                        cur_joint = calf.joints[1];
+                    }
+                    var new_joint_pos = new Vector2D(cur_joint.pos.x + 1, cur_joint.pos.y + 1);
+                    //var newpos = new Vector2D(leg.width, 0);
+                    calf.pos = new_joint_pos.copy();
+                    //calf.angle = Math.PI / this.num_legs;
+                    let secondBone = new Bone(new_joint_pos, calf.angle, calf.width, calf.height, null);
+
+                    curBone.child = secondBone;
+                    cur_ap = calf;
+                    curBone = secondBone;
+                }
+                //Reached end of chain
+                if (cur_ap.children.length == 0){
+                    curBone.grounded = true; //Initialize as grounded
+                    //The last joint
+                    this.feet.push(curBone);
+                }
+
+
+                leg.pos = rootJoint.copy();
+                //leg.angle = i * 2 * Math.PI / this.num_legs;
+                //The end effector represents a whole chain
+                this.chains.push(rootBone);
+
+
+                //Push tip positions (these are fixed for now)
+                var half_size = new Vector2D(this.torso.width / 2, this.torso.height / 2);
+                this.old_foot_pos.push(FK(rootBone).add(this.pos));
+                this.targets.push(FK(rootBone).add(this.pos));
+            }
+        }
+    }
+
+    load(){
         //Legs (specified by torso's children )
         for (var i = 0; i < this.num_legs; i++){
             //Root bone/joint (0, 0, 0) right at center position
@@ -652,15 +715,19 @@ function draw_appendage(ap, game, ctx){
     }
 }
 
-export function draw_appendage_gl(renderer, ap, game, build=false){
+export function draw_appendage_gl(renderer, ap, game, build=false, offset={x:0, y:0}){
 
 
     //Shift matrix stack's top transformation to the position of appendage
     var angle = 0;
+
+    renderer.matrixStack.save();
     if (build){
-        renderer.matrixStack.save();
+        //renderer.matrixStack.save();
         renderer.matrixStack.translate(ap.pos.x, -ap.pos.y, 0);
         angle = ap.angle;
+    } else {
+
     }
 
     //First draw appendage base tiles
@@ -717,7 +784,11 @@ export function draw_appendage_gl(renderer, ap, game, build=false){
 
     //Sinks (1 x 1)
     for (const s of ap.sinks){
-        renderer.drawSprite("reactor", s.pos.x, -s.pos.y, s.width, s.height, angle, 0.1);
+        if (!s.control) {
+            renderer.drawSprite("reactor", s.pos.x, -s.pos.y, s.width, s.height, angle, 0.1);
+        } else {
+            renderer.drawSprite("Mainframe", s.pos.x, -s.pos.y, s.width, s.height, angle, 0.1);
+        }
     }
 
     //joints
@@ -737,26 +808,45 @@ export function draw_appendage_gl(renderer, ap, game, build=false){
         }
     }
 
-    if (build) renderer.matrixStack.restore();
+    renderer.matrixStack.restore();
 }
 
-export function draw_titan(renderer, root, pos, prev_pos, prev_angle, game){
+export function draw_titan(renderer, root, pos, prev_pos, prev_angle, game, offset={x:0, y:0}){
     //Shift position of matrixstack
     renderer.matrixStack.save();
     renderer.matrixStack.rightRotateZ(-prev_angle);
-    renderer.matrixStack.rightRotateZ(root.angle);
+
+
+    //renderer.matrixStack.rightRotateZ(root.angle);
     renderer.matrixStack.translate(pos.x + (root.pos.x), -pos.y - (root.pos.y), 0);
+
+    renderer.matrixStack.translate(-offset.x, offset.y, 0); //Offset of joint positions
+    renderer.matrixStack.rotateZAroundPoint(prev_pos.x, -prev_pos.y, 0, root.angle);
+    //renderer.matrixStack.rotateZAroundPoint(prev_pos.x, -prev_pos.y, 0, prev_angle);
     //renderer.matrixStack.rotateZ(root.angle);
-    renderer.matrixStack.rotateZAroundPoint(prev_pos.x, -prev_pos.y, 0, prev_angle);
 
-    draw_appendage_gl(renderer, root, game);
+    draw_appendage_gl(renderer, root, game, false, offset);
 
 
-    for (const key of root.children){
-        var ap = ECS.entities.appendages[key];
-        var new_pos = {x:prev_pos.x + root.pos.x, y:prev_pos.y + root.pos.y};
-        draw_titan(renderer, ap, new Vector2D(0, 0), new_pos, prev_angle + root.angle, game);
+    for (const joint of root.joints){
+        if (joint.linked){
+            var partner = joint.partner[0];
+            if (partner >= 0){ //Partner is a child
+                var ap = ECS.entities.appendages[root.children[partner]];
+                var paired_joint_pos = {x:joint.partner[1].x, y:joint.partner[1].y + 1};
+                //debugger;
+                var new_pos = {x:prev_pos.x + root.pos.x + joint.pos.x, y:prev_pos.y + root.pos.y + joint.pos.y};
+                draw_titan(renderer, ap, new Vector2D(0, 0), new_pos, prev_angle + root.angle, game, paired_joint_pos);
+            }
+        }
+
     }
+
+    // for (const key of root.children){
+    //     var ap = ECS.entities.appendages[key];
+    //     var new_pos = {x:prev_pos.x + root.pos.x, y:prev_pos.y + root.pos.y};
+    //     draw_titan(renderer, ap, new Vector2D(0, 0), new_pos, prev_angle + root.angle, game);
+    // }
     renderer.matrixStack.restore();
     //renderer.matrixStack.rightRotateZ(-root.angle);
     //renderer.matrixStack.translate(-pos.x - (root.pos.x), pos.y + (root.pos.y), 0);

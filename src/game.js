@@ -37,7 +37,8 @@ var lag = 0;
 var prev = Date.now();
 var elapsed;
 
-export var renderer;
+//export var renderer;
+
 // Game scenes
 export var game;
 export var game_scene;
@@ -75,27 +76,8 @@ export function init(){
 
     //Draw/Load images of gameobjects
 
-    //Chips
-    for (const chip of Object.keys(chip_data)){
-        createChipImage(chip_data[chip]);
-        ECS.blueprints.chips[chip] = chip_data[chip];
-    }
 
-    //Modules
-    for (const mod of Object.keys(module_data)){
-        createModuleImage(module_data[mod]);
-        ECS.blueprints.modules[mod] = module_data[mod];
-    }
-
-    //Appendages
-    for (const ap of Object.keys(appendage_data)){
-        createAppendageImage(appendage_data[ap], 80);
-        if (appendage_data[ap].torso == false) ECS.blueprints.appendages[ap] = appendage_data[ap];
-    }
-
-
-    renderer = new GL_Renderer(Assets.gl);
-    renderer.loadTextures(images);
+    // renderer.loadTextures(images);
 
     sm = new Scene.SceneManager();
     menu = new Scene.Menu();
@@ -312,7 +294,7 @@ class Game {
                           Battery({type: "aquam", pos: {x: 6, y: 5}, rate: 30, quantity: 6})
                         ];
         var test_connectors = [Connector(testm, "north", testm2, "south")];
-        var test_sinks = [Sink(9, 4), Sink(11, 5)];
+        var test_sinks = [Sink(9, 4), Sink(11, 5), Mainframe(10, 8)];
         var test_joint = Joint(19, 2);
         var test_weapons = [Weapon({type: "gun", pos: {x: 15, y: 5}, orientation: 0})];
 
@@ -327,7 +309,7 @@ class Game {
             //                             "children": [], "pos": {x:0, y:0}};
             var test_appendage = copyObject(appendage_data["arm"]);
             //var test_appendage = Appendage(test_appendage_config);
-            console.log(JSON.stringify(test_appendage));
+            //console.log(JSON.stringify(test_appendage));
             //var test_appendage_2 = Object.assign({}, test_appendage);
             var test_appendage_2 = copyObject(test_appendage);
             //test_appendage_2.pos = {x:Assets.canvas.width, y:Assets.canvas.height / 2};
@@ -339,13 +321,15 @@ class Game {
             console.log(test_appendage.children)
             ECS.entities.appendages[test_appendage.id] = test_appendage;
             ECS.entities.appendages[test_appendage_2.id] = test_appendage_2;
-            //ECS.blueprints.appendages[test_appendage.id] = test_appendage;
+            ECS.blueprints.appendages["arm"] = test_appendage;
             //Create appendage images for building
-            createAppendageImage(test_appendage, 80);
+            //createAppendageImage(test_appendage, 80);
             children.push(test_appendage.id);
 
         }
+        ECS.blueprints.appendages["test_ap"] = appendage_data["test_ap"];
 
+        ECS.blueprints.torsos["test_torso"] = appendage_data["test_torso"];
 
         //Torso
         var test_torso_config = {"width": 20, "height": 20, "shell": [],
@@ -358,9 +342,8 @@ class Game {
         this.test_torso = test_torso;
 
         ECS.entities.appendages[test_torso.id] = test_torso;
-        ECS.blueprints.appendages[test_torso.id] = test_torso;
-        ECS.blueprints.torsos[test_torso.id] = test_torso;
-        createAppendageImage(test_torso, 80);
+        //ECS.blueprints.appendages[test_torso.id] = test_torso;
+        //createAppendageImage(test_torso, 80);
         console.log(JSON.stringify(test_torso))
         console.log(ECS.entities.appendages)
         //console.log(JSON.stringify(test_appendage));
@@ -369,8 +352,9 @@ class Game {
 
 
 
-        var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": test_torso, "id": 0, "hp": 500};
+        var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": copyObject(test_torso), "id": 0, "hp": 500};
         var test_titan = new Titan(test_titan_config);
+        test_titan.load();
 
         //Make a deep copy of original titan
         var copy_children = [];
@@ -385,7 +369,7 @@ class Game {
             ECS.entities.appendages[copy_test_appendage.id] = copy_test_appendage;
             ECS.entities.appendages[copy_test_appendage_2.id] = copy_test_appendage_2;
             //Create appendage images for building
-            createAppendageImage(copy_test_appendage, 80);
+            //createAppendageImage(copy_test_appendage, 80);
             copy_children.push(copy_test_appendage.id);
 
         }
@@ -398,6 +382,8 @@ class Game {
 
         var test_opp_config = {"pos": new Vector2D(90, 35), "appendages": [copy_test_appendage, copy_test_appendage_2], "torso": copyObject(copy_torso), "id": 1, "hp": 500};
         this.test_opp = new Titan(test_opp_config);
+        this.test_opp.load();
+
         //Set initial destination
         var dest = new Vector2D(135, 40);
         var dir = dest.subtract(this.test_opp.pos);
@@ -427,6 +413,8 @@ class Game {
 
         this.explosions = [];
 
+        this.temp_titan = null;
+
     }
     resetTitans(){
 
@@ -443,7 +431,7 @@ class Game {
             ECS.entities.appendages[test_appendage.id] = test_appendage;
             ECS.entities.appendages[test_appendage_2.id] = test_appendage_2;
             //Create appendage images for building
-            createAppendageImage(test_appendage, 80);
+            //createAppendageImage(test_appendage, 80);
             children.push(test_appendage.id);
         }
         var test_connectors = [Connector(ECS.entities.modules["testm"], "north", ECS.entities.modules["testm2"], "south")];
@@ -464,7 +452,7 @@ class Game {
         ECS.entities.appendages[test_torso.id] = test_torso;
         ECS.blueprints.appendages[test_torso.id] = test_torso;
         ECS.blueprints.torsos[test_torso.id] = test_torso;
-        createAppendageImage(test_torso, 80);
+        //createAppendageImage(test_torso, 80);
 
         var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": test_torso, "id": 0, "hp": 500};
         var test_titan = new Titan(test_titan_config);
@@ -483,7 +471,7 @@ class Game {
             ECS.entities.appendages[copy_test_appendage.id] = copy_test_appendage;
             ECS.entities.appendages[copy_test_appendage_2.id] = copy_test_appendage_2;
             //Create appendage images for building
-            createAppendageImage(copy_test_appendage, 80);
+            //createAppendageImage(copy_test_appendage, 80);
             copy_children.push(copy_test_appendage.id);
 
         }
@@ -502,20 +490,28 @@ class Game {
         this.test_opp.destination = dest;
         this.test_opp.setNewTargets(dir, 5);
 
+        dest = new Vector2D(15, 10);
+        dir = dest.subtract(this.current_titan.pos);
+        this.current_titan.destination = dest;
+        this.current_titan.setNewTargets(dir, 5);
+
         this.projectiles = [];
         this.explosions = [];
 
     }
     update(delta){
-        // sprites[0].position.set(this.score, this.score, 0);
-        // sprites[0].material.rotation = this.score / 10.0;
-        // sprites[1].position.set(this.score, -this.score, 0);
-        //ECS.systems.updateEntities(this, delta);
-
-
         if (this.battle){
             if (this.result == -1){
                 renderer.updateCamera(delta);
+                if (renderer.camera.pz < 3) {
+                    renderer.camera.pz += 0.0005;
+                } else {
+                    renderer.camera.pz+=0.005;
+                    renderer.camera.px+=0.005;
+                    renderer.camera.py-=0.005;
+                }
+
+
                 const bcr = Assets.gl.getBoundingClientRect();
                 renderer.cursorToScreen(flags["mousePos"].x - bcr.left, flags["mousePos"].y - bcr.top);
                 if (flags['left_down'] == 1) {
@@ -565,6 +561,12 @@ class Game {
             gradient.addColorStop(1, "rgba(0, 0, 0, 1.0)");
             c.fillStyle = gradient;
             c.fillRect(0, 0, canvas.width, canvas.height);
+            //Assets.c.drawImage(images["vital-maker"], (Assets.canvas.width) / 6 + Math.sin(this.frame / 160) * 100, 0, 80, 80);
+
+            if (this.temp_titan != null){
+                renderer.render(this);
+                draw_titan(renderer, this.temp_titan.torso, this.temp_titan.pos, this.temp_titan.pos, 0, this);
+            }
         } else {
             //Battle mode
             renderer.render(this);

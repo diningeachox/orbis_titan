@@ -3,11 +3,11 @@ var WFC = function({nd,weights,rules,wave}){
   var wavefront = {}
   var n_patterns = weights.length
   var wavefront = {}
-  
+
   function coord(k){
     return k.split(",").map(x=>parseInt(x))
   }
-  
+
   function entropy(x){
     var one = 0
     for (var i = 0; i < x.length; i++){
@@ -66,11 +66,11 @@ var WFC = function({nd,weights,rules,wave}){
         var d0 = new Array(nd).fill(0)
         d0[i] = -1
         dirs.push(d0)
-      
+
         var d1 = new Array(nd).fill(0)
         d1[i] = 1
         dirs.push(d1)
-      }      
+      }
       for (var i = 0; i < dirs.length; i++){
         var q = []
         for (var j = 0; j < p.length; j++){
@@ -78,7 +78,7 @@ var WFC = function({nd,weights,rules,wave}){
         }
         var x = wavefront[p]; if (x == undefined) {x = wave[p]}
         var y = wavefront[q]; if (x == undefined) {x = wave[q]}
-      
+
         if (typeof y == 'number' || typeof y == 'undefined'){
           continue
 
@@ -102,7 +102,7 @@ var WFC = function({nd,weights,rules,wave}){
           var mod = false
           for (var j = 0; j < y.length; j++){
             if (y[j] == 0){
-              continue    
+              continue
             }
             var ok = false
             for (var k = 0; k < x.length; k++){
@@ -123,7 +123,7 @@ var WFC = function({nd,weights,rules,wave}){
         }else{
           throw Error("Invalid propagation parameter",x,y);
         }
-        
+
       }
     }
   }
@@ -139,7 +139,7 @@ var WFC = function({nd,weights,rules,wave}){
     }
     return mi
   }
-  
+
   this.readout = function(collapse=true){
     if (!collapse){
       var result = {}
@@ -155,7 +155,7 @@ var WFC = function({nd,weights,rules,wave}){
       }
       return result;
     }
-    
+
     var result = {}
     for (var k in wavefront){
       if (wavefront[k].reduce((a,b) => a + b, 0) == 1){
@@ -164,8 +164,8 @@ var WFC = function({nd,weights,rules,wave}){
     }
     return Object.assign({},wave,result)
   }
-  
-  
+
+
   this.expand = function(xmin, xmax){
     var coords = [[0]]
     for (var i = 0; i < xmin.length; i++){
@@ -186,7 +186,7 @@ var WFC = function({nd,weights,rules,wave}){
       propagate(coord(k))
     }
   }
-  
+
   this.step = function(){
     var min_ent = Infinity
     var min_arg = undefined
@@ -200,7 +200,6 @@ var WFC = function({nd,weights,rules,wave}){
         for (var k in wave){
           propagate(coord(k))
         }
-        console.log(":(")
         return false
       }
       if (ent == 0){
@@ -221,7 +220,7 @@ var WFC = function({nd,weights,rules,wave}){
     wavefront[min_arg] = collapse(wavefront[min_arg]);
     propagate(min_arg);
     return false;
-  } 
+  }
 }
 
 if (typeof module === "object"){

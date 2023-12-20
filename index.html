@@ -115,7 +115,7 @@
 
     flags['zoom'] = 1.0;
 
-
+    var renderer;
     //Shaders
     var shaders = {};
 
@@ -123,12 +123,19 @@
 
     const images = {};
     var arr = {
+        //Chip cells
+        "photum": "sprites/photum_cell.png",
+        "aquam": "sprites/aquam_cell.png",
+        "gravitum": "sprites/gravitum_cell.png",
+        "aetherium": "sprites/aetherium_cell.png",
+        //Chip components
         "circuit2": "sprites/circuit2.png",
-        "BasicInput": "sprites/input_icon.png",
-        "BasicOutput": "sprites/output_icon.png",
+        "BasicInput": "sprites/tube.png",
+        "BasicOutput": "sprites/tube.png",
         "BasicMixer": "sprites/fusion_icon.png",
         "Connector": "sprites/connector_icon.png",
         "Energy Sink": "sprites/reactor.png",
+        "Mesh": "sprites/mesh.png",
 
         "Joint": "sprites/joint-hinge.jpg",
 
@@ -202,14 +209,25 @@
 
 <!-- optional helpful tools -->
 <script src="ndwfc-master/ndwfc-tools.js"></script>
+
+<script src="src/wfc.js"></script>
 <script type="text/javascript" src="shaders/vert.js"></script>
 <script type="text/javascript" src="shaders/frag.js"></script>
 
 <script type="module" src="src/system.js"></script>
 <script type="module">
-
+import * as Assets from './src/assets.js';
+import {GL_Renderer} from "./src/renderer/gl_renderer.js";
 import {init} from './src/game.js';
 import {AudioPlayer, addSound} from './src/sound.js';
+import {createModuleImage} from "./src/gameObjects/module.js";
+import {createChipImage} from "./src/gameObjects/cell.js";
+import {createAppendageImage} from "./src/gameObjects/appendage.js";
+
+import chip_data from './presets/chips.json' assert { type: 'json' };
+import module_data from './presets/modules.json' assert { type: 'json' };
+import weapon_data from './presets/weapons.json' assert { type: 'json' };
+import appendage_data from './presets/appendages.json' assert { type: 'json' };
 
 import sound_data from './src/sound.json' assert { type: 'json' };
 
@@ -217,6 +235,8 @@ var modules = {};
 modules.init = init;
 
 function loadImage(key, num){
+
+    document.getElementsByClassName("load_text")[0].innerHTML = "Loading images";
     images[key] = new Image();
     images[key].onload = function() {
         if (++num >= Object.keys(arr).length - 1) {
@@ -224,11 +244,12 @@ function loadImage(key, num){
         }
     };
     images[key].src = arr[key];
-    document.getElementsByClassName("load_text")[0].innerHTML = "Loading images";
 }
 
 function loadFonts(){
     //fonts
+
+    document.getElementsByClassName("load_text")[0].innerHTML = "Loading fonts";
     var dialogFont = new FontFace('dialogFont', 'url(./fonts/Jost-500-Medium.otf)');
     dialogFont.load().then(function(font){
       // with canvas, if this is ommited won't work
@@ -263,7 +284,6 @@ function loadFonts(){
       document.fonts.add(font);
       console.log('Title Font loaded');
     });
-    document.getElementsByClassName("load_text")[0].innerHTML = "Loading fonts";
 }
 
 //Preloading
@@ -275,10 +295,30 @@ for (var key of Object.keys(arr)) {
     promises.push(loadImage(key, loadedImages));
 }
 promises.push(loadFonts());
-//promises.push(addSound("button_click", sfx_sources, sfx_ctx, "./audio/button_click.ogg"));
 
+function loadPresetImages(){
+    //Chips
+    for (const chip of Object.keys(chip_data)){
+        createChipImage(chip_data[chip]);
+        ECS.blueprints.chips[chip] = chip_data[chip];
+    }
+
+    //Modules
+    for (const mod of Object.keys(module_data)){
+        createModuleImage(module_data[mod]);
+        ECS.blueprints.modules[mod] = module_data[mod];
+    }
+
+    //Appendages
+    for (const ap of Object.keys(appendage_data)){
+        createAppendageImage(appendage_data[ap], 80);
+        if (appendage_data[ap].torso == false) ECS.blueprints.appendages[ap] = appendage_data[ap];
+    }
+}
 //Load sounds from json configs
 function loadAllSounds(){
+
+    document.getElementsByClassName("load_text")[0].innerHTML = "Loading audio";
     //Fetch configurations from volume.json
     console.log("Preset volumes: " + sound_data); //Volume specifications for each file
     for (var key of Object.keys(sound_data)){
@@ -301,16 +341,44 @@ promises.push(loadAllSounds());
 
 //Actions after loading completes
 Promise.all(promises)
+  .then(function drawImages() {
+
+      document.getElementsByClassName("load_text")[0].innerHTML = "Loading presets";
+      // Initiate audio contexts
+      // music_player = new AudioPlayer(music_ctx);
+      // ambient_player = new AudioPlayer(ambient_sounds_ctx);
+      // sfx_player = new AudioPlayer(sfx_ctx);
+
+
+      console.log(images);
+      //Generate sprites for chips
+      // createSprite([245, 245, 220], "photum_chip.png", 0.6);
+      // createSprite([137, 207, 240], "aquam_chip.png", 1.2);
+      // createSprite([62,49,23], "gravitum_chip.png", 1.5);
+      //createSprite([255,255,255], "tube.png", 0.6);
+      //createArmorSprite([255,0,0], "test.png", 0.6, 800, 400);
+      loadPresetImages();
+       //Initialize game states
+
+      //Remove loading screen
+      console.log("Finished drawing game objects!")
+  })
+  .then(function f() {
+      document.getElementsByClassName("load_text")[0].innerHTML = "Loading textures";
+
+      //Load textures into webgl renderer
+
+      renderer = new GL_Renderer(Assets.gl);
+      renderer.loadTextures(images);
+      console.log("Loading textures...")
+  })
   .then(function gameInit() {
 
       // Initiate audio contexts
       music_player = new AudioPlayer(music_ctx);
       ambient_player = new AudioPlayer(ambient_sounds_ctx);
       sfx_player = new AudioPlayer(sfx_ctx);
-      console.log(music_sources)
-      //music_player.setBuffer(music_sources["main"]);
 
-      console.log(images);
       init(); //Initialize game states
 
       //Remove loading screen

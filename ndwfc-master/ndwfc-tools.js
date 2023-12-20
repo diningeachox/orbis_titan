@@ -152,7 +152,7 @@ var WFCTool2D = function(){
       ctx.fillRect(0,0,canvas.width,canvas.height)
     }
     viewportCached = {x:viewport.x,y:viewport.y,w:viewport.w,h:viewport.h};
-
+    //console.log(colors)
     for (var k in wave){
       if (k in waveCached){
         continue
@@ -179,6 +179,7 @@ var WFCTool2D = function(){
           }
           ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
           ctx.fillRect(x+cw*j/w,y+ch*i/h,cw/w+1,ch/h+1);
+          //ctx.fillRect(0, 0, 20, 20);
         }
       }
     }

@@ -97,12 +97,12 @@ export const Chip = (config) => {
     return {str: config.str, storage: config.storage, capacity: config.capacity, inputs: config.inputs, output: output, rates: config.rates, name:config.name, pos: config.pos || new Vector2D(0, 0), orientation: config.orientation || 0, sprite: config.sprite || null, type: "chip"};
 }
 
-export function drawChip(c, chip_str){
+export function drawChip(c, chip_str, magnifier=1){
     //Cell page
     c.strokeStyle = "magenta";
     c.fillStyle = "#32527b";
     c.beginPath();
-    c.roundRect(0, 0, 400, 400, 20);
+    c.roundRect(0, 0, 400 * magnifier, 400 * magnifier, 20 * magnifier);
     c.stroke();
     c.fill();
 
@@ -117,19 +117,15 @@ export function drawChip(c, chip_str){
         if (char != 'x'){
             c.fillStyle = "gray";
             c.beginPath();
-            c.roundRect(25 + 90 * col, 25 + 90 * row, 80, 80, 20);
+            c.roundRect((25 + 90 * col) * magnifier, (25 + 90 * row) * magnifier, 80 * magnifier, 80 * magnifier, 20 * magnifier);
             c.stroke();
             c.fill();
         }
 
         if (isNum(char)){
-            c.fillStyle = resource_colours[char_keys[char]];
-            c.beginPath();
-            c.roundRect(25 + 90 * col + 10, 25 + 90 * row + 10, 60, 60, 20);
-            c.stroke();
-            c.fill();
+            c.drawImage(images[char_keys[char]],(25 + 90 * col + 10) * magnifier, (25 + 90 * row + 10) * magnifier, 60 * magnifier, 60 * magnifier);
         } else if (char != 'x' && char != '.'){
-            c.drawImage(images[char_keys[char]], 25 + 90 * col, 25 + 90 * row, 80, 80);
+            c.drawImage(images[char_keys[char]], (25 + 90 * col) * magnifier, (25 + 90 * row) * magnifier, 80 * magnifier, 80 * magnifier);
         }
     }
 }
@@ -138,10 +134,10 @@ export function createChipImage(chip){
     var mid_w = Assets.canvas.width / 2;
     var mid_h = Assets.canvas.height / 2;
     var newCanvas = document.createElement('canvas');
-    newCanvas.width = 400;
-    newCanvas.height = 400;
+    newCanvas.width = 400 * 5;
+    newCanvas.height = 400 * 5;
     var newContext = newCanvas.getContext('2d');
-    drawChip(newContext, chip.str);
+    drawChip(newContext, chip.str, 5);
     //newContext.drawImage(Assets.canvas, mid_w - 200, mid_h - 200, 400, 400, 0, 0, 400, 400);
     //Add sprite to image array
     var image_data = newCanvas.toDataURL();

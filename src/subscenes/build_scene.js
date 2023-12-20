@@ -1,5 +1,5 @@
 import {Scene, SceneManager, changeScene, screen_vars} from "../scenes.js";
-import {game, game_scene, build_scene, renderer} from "../game.js";
+import {game, game_scene, build_scene} from "../game.js";
 import * as Assets from '../assets.js';
 import {Button, DropDown, Region, TabbedPanel, StateMenu, IconMenu} from "../button.js";
 import {playSound} from "../sound.js";
@@ -8,6 +8,7 @@ import {isNum, copyObject, l2_dist_squared} from "../utils.js";
 import {rectvrect} from "../collision.js";
 import {Chip, ChipFactory} from "../gameObjects/cell.js";
 import {Module, ModuleFactory, Connector, calcEdge} from "../gameObjects/module.js";
+import {Titan} from "../gameObjects/titan.js";
 import {Battery} from "../gameObjects/battery.js";
 import {blurCircle, draw_appendage_gl} from "../gameObjects/titan.js";
 import {Vector2D} from "../vector2D.js";
@@ -76,7 +77,7 @@ var module_button = new Button({x: 110, y:170, width:200, height:50, label:"Modu
  var back_button = new Button({x: 110, y:Assets.canvas.height - 100, width:200, height:50, label:"Back",
         onClick: function(){
             changeScene(game_scene);
-            Assets.gl.style.zIndex = 0;
+            //Assets.gl.style.zIndex = 0;
             playSound(sfx_sources["button_click"].src, sfx_ctx);
         }
    });
@@ -265,7 +266,7 @@ function update_regions(w, h, page){
 
 }
 
-var temp_titan_config = {pos: new Vector2D(0, 0), appendages: [], torso: null};
+export var temp_titan_config = {pos: new Vector2D(0, 0), appendages: [], torso: null, id: ""};
 
 /***
 Subscenes for build mode
@@ -328,12 +329,12 @@ export class BuildScene extends Scene {
 
      //Cell page tabbed panel
      var cell_tabs = new TabbedPanel({
-        x: Assets.canvas.width - 400, y: 150, tabs:["Inputs", "Outputs", "Units", "Mixers"]
+        x: Assets.canvas.width - 400, y: 150, tabs:["Inputs", "Outputs", "Units"]
      });
-     cell_tabs.addToTab("Units", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["photum", "aquam", "gravitum", "aetherium"]})] );
+     cell_tabs.addToTab("Units", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["photum", "aquam", "gravitum", "aetherium"]})] );
      cell_tabs.addToTab("Inputs", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["BasicInput"]})] );
      cell_tabs.addToTab("Outputs", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["BasicOutput"]})] );
-     cell_tabs.addToTab("Mixers", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["BasicMixer"]})] );
+     //cell_tabs.addToTab("Mixers", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["BasicMixer"]})] );
 
      this.tabbed_panels[0].push(cell_tabs);
 
@@ -391,7 +392,7 @@ export class BuildScene extends Scene {
      appendage_tabs.addToTab("Modules", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(module_data)})] );
      appendage_tabs.addToTab("Weapons", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: Object.keys(weapon_data)})] );
      appendage_tabs.addToTab("Utilities", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: appendage_tabs.width, options: ["Connector", "Energy Sink", "Joint", "Mainframe"]})] );
-     appendage_tabs.addToTab("Batteries", [new StateMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["aquam", "photum", "gravitum", "aetherium", "electrum", "pyrum", "rapidum", "fortinium", "vitalium", "plasmium"]})] );
+     appendage_tabs.addToTab("Batteries", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: cell_tabs.width, options: ["aquam", "photum", "gravitum", "aetherium"]})] );
 
      this.tabbed_panels[2].push(appendage_tabs);
      this.clickables[2].push(new_appendage_button);
@@ -408,10 +409,16 @@ export class BuildScene extends Scene {
      var new_titan_button = new Button({x: Assets.canvas.width / 2 - 150, y:Assets.canvas.height - 100, width:200, height:50, label:"Create titan",
           onClick: function(){
               playSound(sfx_sources["button_click"].src, sfx_ctx);
+              if (Assets.name_field.value == ""){
+                  temp_titan_config.id = uuidv4();
+              } else {
+                  temp_titan_config.id = Assets.name_field.value;
+              }
+              game.temp_titan = new Titan(temp_titan_config);
+              game.temp_titan.placeBones();
               //createModule(Assets.name_field.value);
           }
          });
-     new_titan_button.enabled = false;
 
      titan_tabs.addToTab("Appendages", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.appendages) })] );
      titan_tabs.addToTab("Torsos", [new IconMenu({x: Assets.canvas.width - 400, y: 150 + 70, width: titan_tabs.width, options: Object.keys(ECS.blueprints.torsos)})] );
@@ -460,7 +467,15 @@ export class BuildScene extends Scene {
               var selection = tab_panel.tab_items[cur_tab][0].state;
               if (selection != -1){
                   var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
-                  var appendage = ECS.blueprints.appendages[selection_type];
+                  var appendage = null;
+
+                  if (cur_tab == "Torsos"){
+                      appendage = ECS.blueprints.torsos[selection_type];
+                  } else {
+                      appendage = ECS.blueprints.appendages[selection_type];
+
+                  }
+
                   appendage.angle += flags["rotate"] * Math.PI / 180;
               }
           }
@@ -516,11 +531,7 @@ export class BuildScene extends Scene {
                }
 
                if (isNum(char)){
-                   c.fillStyle = resource_colours[char_keys[char]];
-                   c.beginPath();
-                   c.roundRect(this.mid_w - 200 + 25 + 90 * col + 10, this.mid_h - 200 + 25 + 90 * row + 10, 60, 60, 20);
-                   c.stroke();
-                   c.fill();
+                   c.drawImage(images[char_keys[char]], this.mid_w - 200 + 25 + 90 * col + 10, this.mid_h - 200 + 25 + 90 * row + 10, 60, 60);
                } else if (char != 'x' && char != '.'){
                    c.drawImage(images[char_keys[char]], this.mid_w - 200 + 25 + 90 * col, this.mid_h - 200 + 25 + 90 * row, 80, 80);
                }
@@ -535,18 +546,8 @@ export class BuildScene extends Scene {
                var selection = tab_panel.tab_items[cur_tab][0].state;
                if (selection != -1){
                    var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
-                   if (cur_tab == "Units") {
-                       //var unit_type = tab_panel.tab_items[cur_tab][0].options[selection];
-                       var unit_color = resource_colours[selection_type];
-                       c.fillStyle = unit_color;
-                       c.beginPath();
-                       c.roundRect(flags["mousePos"].x - 30, flags["mousePos"].y - 30, 60, 60, 20);
-                       c.stroke();
-                       c.fill();
-                   } else {
-                       var sprite = images[selection_type];
-                       c.drawImage(sprite, flags["mousePos"].x - 30, flags["mousePos"].y - 30, 60, 60);
-                   }
+                   var sprite = images[selection_type];
+                   c.drawImage(sprite, flags["mousePos"].x - 30, flags["mousePos"].y - 30, 60, 60);
                }
            }
        } else if (screen_vars.page == 1){
@@ -839,7 +840,12 @@ export class BuildScene extends Scene {
                var selection = tab_panel.tab_items[cur_tab][0].state;
                if (selection != -1){
                    var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
-                   var appendage = ECS.blueprints.appendages[selection_type];
+                   var appendage = null;
+                   if (cur_tab == "Torsos"){
+                       appendage = ECS.blueprints.torsos[selection_type];
+                   } else {
+                       appendage = ECS.blueprints.appendages[selection_type];
+                   }
                    var sprite = images[selection_type];
                    var img_width = sprite.width;
                    var img_height = sprite.height;
@@ -974,8 +980,6 @@ export class BuildScene extends Scene {
                             var mod = copyObject(ECS.blueprints.modules[selection_type]);
 
                             //Add module to base plate of appendage
-
-
                             if (row + mod.height <= temp_appendage.height && col + mod.width <= temp_appendage.width && highlight_color == "rgba(0, 255, 0, 0.5)"){
                                 mod.pos.x = col;
                                 mod.pos.y = row;
@@ -1068,7 +1072,12 @@ export class BuildScene extends Scene {
                         if (selection != -1){
                             var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
 
-                            var appendage = ECS.blueprints.appendages[selection_type];
+                            var appendage = null;
+                            if (cur_tab == "Torsos"){
+                                appendage = ECS.blueprints.torsos[selection_type];
+                            } else {
+                                appendage = ECS.blueprints.appendages[selection_type];
+                            }
 
                             appendage.pos.x = renderer.selected_coords.x;
                             appendage.pos.y = -renderer.selected_coords.y;
@@ -1081,14 +1090,31 @@ export class BuildScene extends Scene {
                             } else {
                                 var good_to_go = checkLinks(appendage, renderer.selected_coords.x, -renderer.selected_coords.y);
                                 if (good_to_go != null){
-                                    //debugger;
-                                    var copy = copyObject(appendage);
-                                    ECS.entities.appendages[copy.id] = copy;
-                                    if (good_to_go.ap.torso == true) temp_titan_config.appendages.push(copy.id);
-                                    good_to_go.ap.children.push(copy.id);
+
+
+
                                     good_to_go.joint.linked = true;
 
-                                    good_to_go.orig_joint.child = true;
+                                    good_to_go.orig_joint.linked = true;
+                                    //Link the pair of joints (suffices to record position of partner joint, because the appendages already have a parent child relationship)
+                                    //Array of 2 entries: First is >=0 if the joint is on a child (encodes index of child),
+                                    //                    and -1 if the joint is on a parent, second records position of linked joint
+                                    //debugger;
+                                    good_to_go.joint.partner = [good_to_go.ap.children.length, good_to_go.orig_joint.pos]; //Parent app
+                                    good_to_go.orig_joint.partner = [-1, good_to_go.joint.pos]; //Child joint
+                                    //good_to_go.joint.partner = good_to_go.orig_joint;
+
+                                    //Make a copy of selected appendage
+                                    var copy = copyObject(appendage);
+                                    ECS.entities.appendages[copy.id] = copy;
+
+                                    //Parent child relationship
+                                    if (good_to_go.ap.torso == true) temp_titan_config.appendages.push(copy.id);
+                                    good_to_go.ap.children.push(copy.id);
+                                    copy.parent = good_to_go.ap.id;
+                                    //reset blueprint entity members
+                                    good_to_go.orig_joint.linked = false;
+                                    good_to_go.orig_joint.partner = null;
                                 }
 
                             }
@@ -1184,7 +1210,12 @@ export class BuildScene extends Scene {
                    if (selection != -1){
                        var selection_type = tab_panel.tab_items[cur_tab][0].options[selection];
 
-                       var appendage = ECS.blueprints.appendages[selection_type];
+                       var appendage = null;
+                       if (cur_tab == "Torsos"){
+                           appendage = ECS.blueprints.torsos[selection_type];
+                       } else {
+                           appendage = ECS.blueprints.appendages[selection_type];
+                       }
 
                        if (temp_titan_config.torso == null){
                            if (appendage.torso == false){

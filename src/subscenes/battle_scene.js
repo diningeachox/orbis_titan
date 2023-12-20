@@ -1,5 +1,5 @@
 import {Scene, SceneManager, changeScene, screen_vars} from "../scenes.js";
-import {game, game_scene, build_scene, renderer} from "../game.js";
+import {game, game_scene, build_scene} from "../game.js";
 import * as Assets from '../assets.js';
 import {Button, DropDown, Region, TabbedPanel, StateMenu, IconMenu} from "../button.js";
 import {playSound} from "../sound.js";
@@ -60,7 +60,7 @@ export class BattleScene extends Scene {
 
         c.drawImage(images["p1"], 0, canvas.height / 4, canvas.width / 3, canvas.height / 2);
         c.drawImage(images["p2"], 2 * canvas.width / 3, canvas.height / 4, canvas.width / 3, canvas.height / 2);
-        
+
         //title
         c.font="70px titleFont";
         c.fillStyle = "white";

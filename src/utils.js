@@ -2,6 +2,35 @@
 Useful data strutures
 **/
 
+export function Stack(){
+    this.data = new Array(0);
+    this.len = 0;
+}
+Stack.prototype.isEmpty = function(){
+    return (this.len == 0);
+}
+Stack.prototype.pop = function(){
+    if (this.data.length > 0){
+        this.len -= 1;
+        return this.data.splice(this.data.length - 1, this.data.length)[0];
+    }
+    throw "Trying to pop an empty stack!"
+}
+Stack.prototype.enqueue = function(item){
+    this.data.push(item);
+    this.len += 1;
+}
+Stack.prototype.top = function(){
+    if (this.len > 0){
+        return this.data[0];
+    }
+    throw "Stack is empty!"
+}
+
+Stack.prototype.size = function(){
+    return this.len;
+}
+
 export function Queue(){
     this.data = new Array(0);
     this.len = 0;

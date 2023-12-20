@@ -46,7 +46,7 @@ const Weapon = (config) => {
 }
 
 const Joint = (x, y) => {
-    return {pos: {x:x, y:y}, width: 1, height: 3, linked: false, child: false};
+    return {pos: {x:x, y:y}, width: 1, height: 3, linked: false, partner: null};
 }
 
 const Sink = (x, y) => {
@@ -85,7 +85,7 @@ const ModuleFactory = (w, h, data = [], name = "") => {
     return new_module;
 }
 
-export function drawModule(c, module_dict){
+export function drawModule(c, module_dict, mult=25){
     //Draw motherboard according to module dimensions set in textboxes
     var rows = module_dict.height;
     var cols = module_dict.width;
@@ -94,24 +94,25 @@ export function drawModule(c, module_dict){
         for (var j = 0; j < cols; j++){
             c.fillStyle = "#ededed";
             c.beginPath();
-            c.roundRect(80 * j, 80 * i, 80, 80, 10);
+            c.roundRect(80 * mult * j, 80 * mult  * i, 80 * mult, 80 * mult, 10);
             c.stroke();
             c.fill();
-
+            c.drawImage(images["Mesh"], 80 * j * mult, 80 * i * mult, 80 * mult, 80 * mult);
             //Draw objects
             var index = cols * i + j;
             var grid = module_dict.interface[index];
 
             if (grid.wires != ""){
                 if (images.hasOwnProperty(grid.wires)){
-                    c.drawImage(images[grid.wires], 80 * j, 80 * i, 80, 80);
+                    c.drawImage(images[grid.wires], 80 * j * mult, 80 * i * mult, 80 * mult, 80 * mult);
                 }
             } else if (grid.obj != null){
                 var chip = grid.obj;
+                //debugger;
                 if (!images.hasOwnProperty(chip.str)){
                     createChipImage(chip);
                 }
-                c.drawImage(images[chip.str], 80 * j, 80 * i, 80, 80);
+                c.drawImage(images[chip.str], 80 * j * mult, 80 * i * mult, 80 * mult, 80 * mult);
             }
         }
     }
@@ -119,13 +120,14 @@ export function drawModule(c, module_dict){
 }
 
 export function createModuleImage(module_dict){
+    var mult = 25;
     var mid_w = Assets.canvas.width / 2;
     var mid_h = Assets.canvas.height / 2;
     var newCanvas = document.createElement('canvas');
-    newCanvas.width = module_dict.width * 80;
-    newCanvas.height = module_dict.height * 80;
+    newCanvas.width = module_dict.width * 80 * mult;
+    newCanvas.height = module_dict.height * 80 * mult;
     var newContext = newCanvas.getContext('2d');
-    drawModule(newContext, module_dict);
+    drawModule(newContext, module_dict, mult);
     //newContext.drawImage(Assets.canvas, mid_w - 200, mid_h - 200, 400, 400, 0, 0, 400, 400);
     //Add sprite to image array
     var image_data = newCanvas.toDataURL();

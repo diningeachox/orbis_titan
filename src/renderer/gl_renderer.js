@@ -50,14 +50,14 @@ export class GL_Renderer {
 
         this.camera = {
           matrix:[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1],
-          px:3,
-          py:-3,
-          pz:25,
+          px:3.375,
+          py:-5.375,
+          pz:0.11,
           elev:0,
           ang:0,
           roll:0,
-          near:0.5,
-          far:1000
+          near:0.01, //Causes problems if near is too small
+          far:100
         };
         //this.skybox_view_matrix = [ 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 ];
         this.pan_speed = 0.1;
@@ -79,6 +79,7 @@ export class GL_Renderer {
     loadTextures(images){
         for (var key of Object.keys(images)) {
             var tex = this.gl.createTexture();
+            console.log(key, images[key])
             loadTexture(this.gl, tex, images[key].src);
             this.textures[key] = tex;
         }

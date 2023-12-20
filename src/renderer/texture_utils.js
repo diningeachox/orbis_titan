@@ -21,9 +21,10 @@ function makeTexture(gl, texture, data, c, repeat=false){
 export function loadTexture(gl, texture, path){
     var image = new Image();
     image.src = path;
-    image.addEventListener('load', function() {
-        makeTexture(gl, texture, image, image);
-    });
+    makeTexture(gl, texture, image, image);
+    // image.addEventListener('load', function() {
+    //     makeTexture(gl, texture, image, image);
+    // });
 }
 
 export function genTexture(gl, texture, draw_func, params=null){

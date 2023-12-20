@@ -30,6 +30,7 @@ const Appendage = (config) => {
       sinks: config.sinks,
       joints: config.joints,
       id: id,
+      parent: null,
       children: config.children || [],
       pos: config.pos,
       angle: config.angle || 0,
