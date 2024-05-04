@@ -336,7 +336,7 @@ class Game {
                                       "modules": [testm, testm2], "weapons": test_weapons,
                                       "batteries": this.batteries, "connectors": test_connectors,
                                       "joints": [Joint(19, 17), Joint(19, 2), Joint(0, 2), Joint(0, 17)], "sinks": test_sinks,
-                                      "children": children, "pos": {x:-0, y: -0}};
+                                      "children": children, "pos": {x:0, y: 0}};
 
         var test_torso = Torso(test_torso_config);
         this.test_torso = test_torso;
