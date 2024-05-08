@@ -1,4 +1,6 @@
 *.zip
+*.7z
 /fonts/**
 /audio/**
 /sprites/**
+node_modules/

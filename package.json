@@ -1,0 +1,17 @@
+{
+  "name": "orbis_titan",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "~4.18.2",
+    "fs": "^0.0.2",
+    "mongodb": "^6.3.0",
+    "path": "^0.12.7"
+  },
+  "description": "Source code for the mecha-building game Orbis Titan",
+  "main": "app.js",
+  "author": "Jack Ding",
+  "license": "ISC",
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.5.2"
+  }
+}
