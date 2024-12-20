@@ -55,7 +55,7 @@ MatrixStack.prototype.rotateZ = function(angleInRadians) {
 MatrixStack.prototype.rightRotateZ = function(angleInRadians) {
   var m = this.getCurrentMatrix();
   /***
-  Multiplying rotation matrices on the right here is necessarily because we
+  Multiplying rotation matrices on the right here is necessary because we
   want the rotations to always be done before the translations,
   which are multiplied from the left
   ***/

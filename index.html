@@ -224,12 +224,12 @@ import {createModuleImage} from "./src/gameObjects/module.js";
 import {createChipImage} from "./src/gameObjects/cell.js";
 import {createAppendageImage} from "./src/gameObjects/appendage.js";
 
-import chip_data from './presets/chips.json' assert { type: 'json' };
-import module_data from './presets/modules.json' assert { type: 'json' };
-import weapon_data from './presets/weapons.json' assert { type: 'json' };
-import appendage_data from './presets/appendages.json' assert { type: 'json' };
+import chip_data from './presets/chips.json' with { type: 'json' };
+import module_data from './presets/modules.json' with { type: 'json' };
+import weapon_data from './presets/weapons.json' with { type: 'json' };
+import appendage_data from './presets/appendages.json' with { type: 'json' };
 
-import sound_data from './src/sound.json' assert { type: 'json' };
+import sound_data from './src/sound.json' with { type: 'json' };
 
 var modules = {};
 modules.init = init;

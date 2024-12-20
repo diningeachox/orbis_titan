@@ -66,7 +66,7 @@ export class Titan {
 
             var joint = this.torso.joints[i];
             if (joint.partner != null){
-                debugger;
+                //debugger;
                 var leg = ECS.entities.appendages[this.torso.children[joint.partner[0]]];
                 var cur_ap = leg;
                 var accum_pos = new Vector2D(leg.width, 0);
@@ -814,18 +814,21 @@ export function draw_appendage_gl(renderer, ap, game, build=false, offset={x:0, 
 export function draw_titan(renderer, root, pos, prev_pos, prev_angle, game, offset={x:0, y:0}){
     //Shift position of matrixstack
     renderer.matrixStack.save();
-    renderer.matrixStack.rightRotateZ(-prev_angle);
+    //renderer.matrixStack.rightRotateZ(-prev_angle);
 
 
     //renderer.matrixStack.rightRotateZ(root.angle);
-    renderer.matrixStack.translate(pos.x + (root.pos.x), -pos.y - (root.pos.y), 0);
+    //renderer.matrixStack.translate(pos.x + (root.pos.x), -pos.y - (root.pos.y), 0);
 
-    renderer.matrixStack.translate(-offset.x, offset.y, 0); //Offset of joint positions
-    renderer.matrixStack.rotateZAroundPoint(prev_pos.x, -prev_pos.y, 0, root.angle);
+    //renderer.matrixStack.translate(-offset.x, offset.y, 0); //Offset of joint positions
+
+    
+
     //renderer.matrixStack.rotateZAroundPoint(prev_pos.x, -prev_pos.y, 0, prev_angle);
     //renderer.matrixStack.rotateZ(root.angle);
 
     draw_appendage_gl(renderer, root, game, false, offset);
+    renderer.matrixStack.rotateZAroundPoint(prev_pos.x, -prev_pos.y, 0, root.angle); //Rotate around position
 
 
     for (const joint of root.joints){

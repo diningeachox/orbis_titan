@@ -1,12 +1,14 @@
 import * as Scene from './scenes.js';
 import * as Assets from './assets.js';
 
+//Gameobjects
 import {Module, Connector, Weapon, Joint, Sink, Mainframe, createModuleImage} from "./gameObjects/module.js";
 import {Cell, Router, Grid, createChipImage} from "./gameObjects/cell.js";
 import {Shell, Appendage, Torso, createAppendageImage} from "./gameObjects/appendage.js";
 import {Titan, draw_appendage_gl, draw_titan} from "./gameObjects/titan.js";
 import {Battery} from "./gameObjects/battery.js";
 
+//Scenes
 import {Vector2D} from "./vector2D.js";
 import {BuildScene} from "./subscenes/build_scene.js";
 import {BattleScene} from "./subscenes/battle_scene.js";
@@ -17,10 +19,11 @@ import {Explosion, P1, P2} from "./projectile.js";
 
 import {GL_Renderer} from "./renderer/gl_renderer.js";
 
-import chip_data from '../presets/chips.json' assert { type: 'json' };
-import module_data from '../presets/modules.json' assert { type: 'json' };
-import weapon_data from '../presets/weapons.json' assert { type: 'json' };
-import appendage_data from '../presets/appendages.json' assert { type: 'json' };
+//Presets
+import chip_data from '../presets/chips.json' with { type: 'json' };
+import module_data from '../presets/modules.json' with { type: 'json' };
+import weapon_data from '../presets/weapons.json' with { type: 'json' };
+import appendage_data from '../presets/appendages.json' with { type: 'json' };
 //Variables from assets.js
 var canvas = Assets.canvas;
 var overlay = Assets.overlay;
@@ -216,10 +219,9 @@ class Game {
         this.frame = 0;
 
         this.result = -1;
-        //Assets.SpriteFactory('../sprites/ship1.png', 0);
-        //Assets.SpriteFactory('../sprites/ship1.png', 1);
 
-        /***Game screens/modes
+        /***
+        Game screens/modes
             Control: Main menu
               - Schedule
               - Build
@@ -308,6 +310,8 @@ class Game {
             //                             "joints": [Joint(19, 2), Joint(0, 2)], "sinks": test_sinks,
             //                             "children": [], "pos": {x:0, y:0}};
             var test_appendage = copyObject(appendage_data["arm"]);
+
+            //if (i == 0) ECS.blueprints.appendages["arm"] = test_appendage;
             //var test_appendage = Appendage(test_appendage_config);
             //console.log(JSON.stringify(test_appendage));
             //var test_appendage_2 = Object.assign({}, test_appendage);
@@ -321,15 +325,18 @@ class Game {
             console.log(test_appendage.children)
             ECS.entities.appendages[test_appendage.id] = test_appendage;
             ECS.entities.appendages[test_appendage_2.id] = test_appendage_2;
-            ECS.blueprints.appendages["arm"] = test_appendage;
+            
             //Create appendage images for building
             //createAppendageImage(test_appendage, 80);
             children.push(test_appendage.id);
 
         }
-        ECS.blueprints.appendages["test_ap"] = appendage_data["test_ap"];
 
+        //Copy preset into blueprints
+        ECS.blueprints.appendages["test_ap"] = appendage_data["test_ap"];
+        ECS.blueprints.appendages["arm"] = appendage_data["arm"];
         ECS.blueprints.torsos["test_torso"] = appendage_data["test_torso"];
+
 
         //Torso
         var test_torso_config = {"width": 20, "height": 20, "shell": [],
@@ -338,6 +345,7 @@ class Game {
                                       "joints": [Joint(19, 17), Joint(19, 2), Joint(0, 2), Joint(0, 17)], "sinks": test_sinks,
                                       "children": children, "pos": {x:0, y: 0}};
 
+        
         var test_torso = Torso(test_torso_config);
         this.test_torso = test_torso;
 
@@ -456,6 +464,9 @@ class Game {
 
         var test_titan_config = {"pos": new Vector2D(0, 0), "appendages": [test_appendage, test_appendage_2], "torso": test_torso, "id": 0, "hp": 500};
         var test_titan = new Titan(test_titan_config);
+        /****
+            Player's titan
+        ****/
         this.current_titan = test_titan;
 
         //Make a deep copy of original titan
@@ -482,6 +493,7 @@ class Game {
                                       "children": copy_children, "pos": {x:-0, y: -0}};
         var copy_torso = Torso(copy_torso_config);
 
+        //Test opponent titan
         var test_opp_config = {"pos": new Vector2D(90, 35), "appendages": [copy_test_appendage, copy_test_appendage_2], "torso": copyObject(copy_torso), "id": 1, "hp": 500};
         this.test_opp = new Titan(test_opp_config);
         //Set initial destination
@@ -528,6 +540,7 @@ class Game {
 
                 //test
                 renderer.drawLineStrips(0, 0, [0.0, 0.0, 2.0, 2.0,   2.0, 2.0, 3.0, 10.0], [1.0, 0.0, 1.0]);
+                //debugger;
                 this.current_titan.update(this, delta);
                 this.test_opp.update(this, delta);
                 ECS.systems.update(this, delta);
@@ -575,6 +588,7 @@ class Game {
             renderer.drawSprite("arena", -100, 100, 300, 300, 0, -0.1);
             if (this.current_titan != null){
                 //Draw titan
+                //debugger;
                 draw_titan(renderer, this.current_titan.torso, this.current_titan.pos, this.current_titan.pos, 0, this);
                 //Draw opponent
                 draw_titan(renderer, this.test_opp.torso, this.test_opp.pos, this.test_opp.pos, 0, this);

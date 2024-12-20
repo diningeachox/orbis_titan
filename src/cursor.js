@@ -4,12 +4,14 @@ export class Cursor {
         this.x = x;
         this.y = y;
         this.radius = radius;
+        this.green = "#24ff8a";
+        this.red = "#ff0000";
     }
 
-    draw(){
+    draw(c="#24ff8a"){
         var length = this.radius * 3;
         //Circle
-        this.ctx.strokeStyle = "#24ff8a";
+        this.ctx.strokeStyle = c;
         this.ctx.lineWidth = 2;
 
         this.ctx.beginPath();

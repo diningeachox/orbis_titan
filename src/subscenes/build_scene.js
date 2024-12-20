@@ -4,7 +4,7 @@ import * as Assets from '../assets.js';
 import {Button, DropDown, Region, TabbedPanel, StateMenu, IconMenu} from "../button.js";
 import {playSound} from "../sound.js";
 import {resource_colours, formulas, keys, char_keys} from "../gameObjects/resource.js";
-import {isNum, copyObject, l2_dist_squared} from "../utils.js";
+import {isNum, copyObject, l2_dist_squared, uuidv4} from "../utils.js";
 import {rectvrect} from "../collision.js";
 import {Chip, ChipFactory} from "../gameObjects/cell.js";
 import {Module, ModuleFactory, Connector, calcEdge} from "../gameObjects/module.js";
@@ -16,9 +16,9 @@ import {updateAppendage} from "../system.js";
 import {GL_Renderer} from "../renderer/gl_renderer.js";
 
 //JSON data
-import chip_data from '../../presets/chips.json' assert { type: 'json' };
-import module_data from '../../presets/modules.json' assert { type: 'json' };
-import weapon_data from '../../presets/weapons.json' assert { type: 'json' };
+import chip_data from '../../presets/chips.json' with { type: 'json' };
+import module_data from '../../presets/modules.json' with { type: 'json' };
+import weapon_data from '../../presets/weapons.json' with { type: 'json' };
 
 //Variables from assets.js
 var canvas = Assets.canvas;
@@ -268,6 +268,10 @@ function update_regions(w, h, page){
 
 export var temp_titan_config = {pos: new Vector2D(0, 0), appendages: [], torso: null, id: ""};
 
+//Flags 
+
+var erase = false;
+
 /***
 Subscenes for build mode
 
@@ -300,6 +304,9 @@ export class BuildScene extends Scene {
      this.regions = {0:[], 1:[], 2:[], 3:[], 4:[]};
      this.tabbed_panels = {0:[], 1:[], 2:[], 3:[], 4:[]};
 
+     //Flags 
+     this.clear = false;
+
     //Cell page buttons
      var new_cell_button = new Button({x: Assets.canvas.width / 2 - 150, y:Assets.canvas.height - 100, width:200, height:50, label:"Create chip",
           onClick: function(){
@@ -314,7 +321,16 @@ export class BuildScene extends Scene {
                  resetCell();
              } else if (screen_vars.page == 1){
                  update_regions(temp_module_w, temp_module_h, screen_vars.page);
+             } else if (screen_vars.page == 3){
+                 temp_titan_config = null;
              }
+         }
+        });
+
+     var erase_button = new Button({x: Assets.canvas.width - 150, y:Assets.canvas.height - 100, width:200, height:50, label:"Erase", color: "red",
+         onClick: function(){
+             playSound(sfx_sources["button_click"].src, sfx_ctx);
+             erase = !(erase);
          }
         });
      this.clickables[0].push(new_cell_button);
@@ -416,6 +432,16 @@ export class BuildScene extends Scene {
               }
               game.temp_titan = new Titan(temp_titan_config);
               game.temp_titan.placeBones();
+
+              game.current_titan = new Titan(temp_titan_config);
+              //debugger;
+              game.current_titan.placeBones();
+              console.log("New Titan created!")
+              console.log(temp_titan_config);
+              console.log(JSON.stringify(temp_titan_config));
+              for (var i=0; i < temp_titan_config.torso.children.length; i++){
+                  console.log(ECS.entities.appendages[temp_titan_config.torso.children[i]]);
+              }
               //createModule(Assets.name_field.value);
           }
          });
@@ -431,6 +457,7 @@ export class BuildScene extends Scene {
 
      this.clickables[3].push(new_titan_button);
      this.clickables[3].push(clear_button);
+     this.clickables[3].push(erase_button);
 
    }
    update(delta) {
@@ -827,7 +854,7 @@ export class BuildScene extends Scene {
                 draw_appendage_gl(renderer, cur_ap, null, true);
                 while (cur_ap.children.length > 0){
                     cur_ap = ECS.entities.appendages[cur_ap.children[0]];
-                    console.log(cur_ap)
+                    //console.log(cur_ap)
                     draw_appendage_gl(renderer, cur_ap, null, true);
                 }
            }
